@@ -16,8 +16,7 @@ class BaseConfig(object):
                                                        string.ascii_letters + string.punctuation) for i in range(50)])
 
     # SQL Alchemy
-    SQLALCHEMY_DATABASE_URI = "sqlite:///{database}".format(database=os.path.join(basedir, "votes.db"))
-    SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, "db_repository")
+    SQLALCHEMY_DATABASE_URI = "sqlite:///{database}".format(database=os.path.join(basedir, "../votes.db"))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Compiled regex that all user emails must conform to

@@ -84,7 +84,7 @@ def login():
         template = "email.html"
         title = "Enter your email"
     else:
-        # TODO: Hack, remove this later, saves having to log in each time
+        # TODO: Hack, remove this later, saves having to log in each time, as each reload deletes the old login cookie!
         if email in app.config["ADMIN_EMAILS"]:
             session["email"] = email
             return redirect(INDEX_LOGIN)
