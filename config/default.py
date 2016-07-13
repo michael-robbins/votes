@@ -6,7 +6,7 @@ import string
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
-class Config(object):
+class BaseConfig(object):
     DEBUG = False
     TESTING = False
 
@@ -57,12 +57,3 @@ Warm Regards,
 
     # Iterable of email addresses that will be treated like vote owners for vote editing purposes
     ADMIN_EMAILS = list()
-
-
-class ProductionConfig(Config):
-    pass
-
-
-class DevelopmentConfig(Config):
-    DEBUG = True
-    TESTING = True
