@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% macro render_with_label(field) -%}
+    <div>{{ field.label }}: {{ field }}</div>
+    {% for error in field.errors %}
+            <div style="color: red;">[{{ error }}]</div>
+    {% endfor %}
+{%- endmacro %}
+
+{% macro render_with_id(field) -%}
+    <div>{{ field.label }}: {{ field }}</div>
+    {% for error in field.errors %}
+            <div style="color: red;">[{{ error }}]</div>
+    {% endfor %}
+{%- endmacro %}
+
+{% block content %}
+    <h1>{{ header }}</h1>
+
+    <br />
+    <form action="{{ post_url }}" method="post">
+        {{ form.hidden_tag() }}
+        {{ render_with_label(form.title) }}
+        {{ render_with_label(form.start_time) }}
+        {{ render_with_label(form.end_time) }}
+        {{ render_with_label(form.disabled) }}
+        {{ render_with_label(form.vote_type) }}
+
+        <div id="questions">
+            {% set question_counter = 0 %}
+            {% for question in form.questions %}
+            <div id="questions-{{ question_counter }}">
+                {{ question.hidden_tag() }}
+                <p>Question {{ question_counter + 1 }}:</p>
+                <input type="hidden" id="question-id" value="{{ question.id }}" />
+                {{ render_with_id(question.question) }}
+                {{ render_with_id(question.question_type) }}
+                {{ render_with_id(question.question_type_max) }}
+                <div id="questions-{{ question_counter }}-choices">
+                    <p>Choices (for Question {{ question_counter + 1 }}):</p>
+                    {% set choice_counter = 0 %}
+                    {% for choice in question.choices %}
+                    <div id="questions-{{ question_counter }}-choices-{{ choice_counter }}">
+                        {{ choice.hidden_tag() }}
+                        <div>{{ choice.choice.id }}: {{ choice.choice }}
+                            {% if choice_counter > 0 %}
+                             <- <button class="btn" type="button" onclick="deleteNode(this.parentNode.parentNode)">Remove Choice</button>
+                            {% endif %}
+                        </div>
+                        {% if choice.choice.errors %}
+                        <div style="color: red;">[Required (even for freetext)]</div>
+                        {% endif %}
+                    </div>
+                    {% set choice_counter = choice_counter + 1 %}
+                    {% endfor %}
+
+                </div>
+                <button class="btn" type="button" onclick="newChoice(this)">New Choice</button>
+                {% if question_counter > 0 %}
+                <button class="btn" type="button" onclick="deleteNode(this.parentNode)">Remove Question</button>
+                {% endif %}
+            </div>
+            {% set question_counter = question_counter + 1 %}
+            {% endfor %}
+        </div>
+        <p><button class="btn" type="button" onclick="newQuestion()">New Question</button></p>
+        <p>
+            {{ form.submit }}
+            {{ form.delete }}
+        </p>
+        <p><a href="/votes">Go back</a></p>
+    </form>
+
+    <script src="{{ url_for("static", filename="js/dynamic_creation.js") }}"></script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ vote.title }}</h1>
+    <form action="/votes/cast/{{ vote.id }}" method="post">
+        {{ form.hidden_tag() }}
+
+        {% for field in form._fields if form[field].type not in ["CSRFTokenField", "SubmitField"] %}
+            <div>
+                <h3>{{ form[field].label }}:</h3> {{ form[field] }}
+            </div>
+            {% for error in form[field].errors %}
+                <div style="color: red;">[{{ error }}]</div>
+            {% endfor %}
+        {% endfor %}
+
+        <p>
+            {{ form.submit }}
+            {{ form.delete }}
+        </p>
+        <p><a href="/">Go back</a></p>
+    </form>
+{% endblock %}

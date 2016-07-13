@@ -1,0 +1,4 @@
+.idea
+*.db
+*.pyc
+bootstrap_db.py

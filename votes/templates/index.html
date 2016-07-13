@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ company }} Votes!</h1>
+    <p class="important">
+      Hello, {{ name }}
+    </p>
+
+    <p class="important">
+        <a href="/votes/new">Create a new Vote</a>
+    </p>
+
+    <div id="votes">
+    {% if visible_votes %}
+    Your currently available votes:
+    {% for vote in visible_votes %}
+	    <li>
+            <a href="/votes/cast/{{ vote.id }}">{{ vote.title }}</a>
+            {% if vote.has_actions %} (already submitted){% endif %}
+        </li>
+    {% endfor %}
+    {% else %}
+    There are no available votes!
+    {% endif %}
+    </div>
+
+
+    {% if owned_votes %}
+    <br />
+    Votes you own:
+    <div id="owned_votes">
+    {% for vote in owned_votes %}
+        <li>
+            <a href="/votes/edit/{{ vote.id }}">{{ vote.title }}</a>
+        </li>
+    {% endfor %}
+    </div>
+    {% endif %}
+
+{% endblock %}

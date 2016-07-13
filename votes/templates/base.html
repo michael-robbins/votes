@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% block head %}
+    <meta charset="UTF-8">
+    <title>{{ company }} Votes{% block title %}{% endblock %}</title>
+    {% endblock %}
+</head>
+<body>
+    <a style="position: absolute; top: 5px; right: 5px;" href="/logout">Log Out</a>
+    <div id="messages">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+        {% for message in messages %}
+            <li>{{ message }} </li>
+        {% endfor %}
+        </ul>
+        {% endif %}
+    {% endwith %}
+    </div>
+    <div id="content">{% block content %}{% endblock %}</div>
+</body>
+</html>
