@@ -12,8 +12,8 @@ class Config(object):
 
     # CSRF Protection
     WTF_CSRF_ENABLED = True
-    SECRET_KEY_CHAR_POOL = string.ascii_lowercase + string.ascii_uppercase + string.ascii_letters + string.punctuation
-    SECRET_KEY = ''.join([random.SystemRandom().choice(SECRET_KEY_CHAR_POOL) for i in range(50)])
+    SECRET_KEY = ''.join([random.SystemRandom().choice(string.ascii_lowercase + string.ascii_uppercase +
+                                                       string.ascii_letters + string.punctuation) for i in range(50)])
 
     # SQL Alchemy
     SQLALCHEMY_DATABASE_URI = "sqlite:///{database}".format(database=os.path.join(basedir, "votes.db"))

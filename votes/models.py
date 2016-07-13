@@ -1,5 +1,6 @@
-from Votes import app, db
 import datetime
+
+from . import app, db
 
 
 class Voter(db.Model):

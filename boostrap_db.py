@@ -1,4 +1,4 @@
-from Votes.models import *
+from votes.models import *
 
 import json
 

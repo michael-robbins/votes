@@ -1,3 +1,3 @@
-from Votes import app
+from votes import app
 
 app.run(debug=True)

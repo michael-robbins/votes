@@ -5,4 +5,4 @@ app = Flask(__name__)
 app.config.from_object("config.ProductionConfig")
 db = SQLAlchemy(app)
 
-from Votes import views, models
+from . import views, models
