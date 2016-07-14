@@ -400,7 +400,7 @@ def vote_cast_crud(vote_id):
                         break
 
                 try:
-                    action.choices = json.dumps({key: int(value) for key, value in answer.items()})
+                    action.choices = json.dumps({key: value for key, value in answer.items()})
                 except ValueError as e:
                     message = "Value ID is malformed? {0}"
                     getattr(vote_form, field).errors.append(message.format(e))

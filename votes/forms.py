@@ -76,6 +76,10 @@ class RankedField(Field):
         seen_ranks = set()
 
         for choice_id, rank in self.data.items():
+            if rank == "":
+                # Skip validation if the rank value field is left 'empty' as there's nothing to validate
+                continue
+
             try:
                 choice_id = int(choice_id)
             except ValueError:

@@ -91,19 +91,47 @@ def build_form_for_questions(questions):
                     return False
 
                 question_type = question_obj.question_type
-                question_type_max = question_obj.question_type_max
+                question_type_max = int(question_obj.question_type_max)
 
                 if question_type == QUESTION_SINGLECHOICE:
                     # There's nothing to check here, they can only submit one (afaik)
                     pass
                 elif question_type == QUESTION_MULTIPLECHOICE:
                     # Ensure they are only passing in <= question_type_max choices
-                    print("Validating QUESTION_MULTIPLECHOICE, field length is <= {0}".format(question_type_max))
-                    print(self.data[form_field])
-
                     if len(self.data[form_field]) > question_type_max:
-                        getattr(self, form_field).errors.append("Please only choose up to {0} options".format(
-                            question_type_max))
+                        message = "Please only choose up to {0} options"
+                        getattr(self, form_field).errors.append(message.format(question_type_max))
+                        return False
+                elif question_type == QUESTION_FREETEXT:
+                    # There's nothing to check here, it's a text box
+                    pass
+                elif question_type == QUESTION_RANKED:
+                    print("Validating QUESTION_RANKED, field length is <= {0}".format(question_type_max))
+                    print(self.data[form_field])
+                    ranks_submitted = set()
+
+                    for key, value in self.data[form_field].items():
+                        if value == "":
+                            # Nothing to validate on an empty field
+                            continue
+
+                        if int(value) > question_type_max:
+                            message = "You've entered a rank above the maximum allowed ({0}) for this question"
+                            getattr(self, form_field).errors.append(message.format(question_type_max))
+                            return False
+
+                        if len(ranks_submitted) > question_type_max:
+                            message = "You've entered too many rankings, the maximum allowed is {0} for this question"
+                            getattr(self, form_field).errors.append(message.format(question_type_max))
+                            return False
+
+                        ranks_submitted.add(value)
+
+                    print(ranks_submitted)
+
+                    if len(ranks_submitted) < question_type_max:
+                        message = "You need to enter {0} rankings, you've only entered {1}!"
+                        getattr(self, form_field).errors.append(message.format(question_type_max, len(ranks_submitted)))
                         return False
 
         return True
