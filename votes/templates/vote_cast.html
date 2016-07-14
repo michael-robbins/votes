@@ -2,6 +2,14 @@
 
 {% block content %}
     <h1>{{ vote.title }}</h1>
+
+    {% if vote.vote_type == "TrackedBallot" %}
+    <h3>This is a Tracked Ballot, your vote WILL be tied to your email address.</h3>
+    {% elif vote.vote_type == "AnonymousBallot" %}
+    <h3>This is an Anonymous Ballot, your vote WILL NOT be tied to anything. Promise.</h3>
+    {% endif %}
+    <hr />
+
     <form action="/votes/cast/{{ vote.id }}" method="post">
         {{ form.hidden_tag() }}
 

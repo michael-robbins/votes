@@ -3,7 +3,7 @@ import random
 import datetime
 
 from . import app, db
-from .models import VoterAction, VoteQuestion, Voter
+from .models import VoterAction, VoteQuestion, Voter, VoterParticipation
 from .forms import RankedField
 
 from flask_wtf import Form
@@ -36,6 +36,40 @@ LOGIN = "/login"
 LOGIN_THX = "{0}?plz-login-k-thx".format(LOGIN)
 LOGIN_EMAIL = "{0}?email={1}".format(LOGIN, "{0}")
 LOGIN_THOUGHTS = "{0}?or-not-to-logout".format(LOGIN)
+
+
+def vote_is_live(vote):
+    """
+    Takes a vote and determines if 'now' is within the start/end time of the vote
+    :param vote:
+    :return: Boolean
+    """
+    now = datetime.datetime.now()
+
+    return bool(vote.start_time < now < vote.end_time)
+
+
+def user_has_participated(voter, vote):
+    """
+    Takes a voter and a vote and returns if they have already participated
+    :param voter:
+    :param vote:
+    :return: Boolean
+    """
+    return bool(VoterParticipation.query.filter_by(vote=vote, voter=voter).first())
+
+
+def string_format_delta(timedelta, template):
+    """
+    Takes a timedelta object, extracts the days/hours/minutes/seconds and inserts them into the provided template
+    :param timedelta:
+    :param template:
+    :return: String
+    """
+    d = {"days": timedelta.days}
+    d["hours"], rem = divmod(timedelta.seconds, 3600)
+    d["minutes"], d["seconds"] = divmod(rem, 60)
+    return template.format(**d)
 
 
 def get_voter(email):

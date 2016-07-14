@@ -28,8 +28,8 @@ class Vote(db.Model):
     disabled = db.Column(db.Boolean, default=False)
     restrictions = db.Column(db.Text)
 
-    def __init__(self, title, owner, vote_type, start_time=datetime.datetime.now(), end_time=datetime.datetime.now(),
-                 restrictions=""):
+    def __init__(self, title, owner, vote_type, start_time=datetime.datetime.now(),
+                 end_time=datetime.datetime.now() + datetime.timedelta(days=1), restrictions=""):
         self.title = title
         self.owner = owner
         self.vote_type = vote_type

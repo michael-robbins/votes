@@ -15,8 +15,13 @@
     Your currently available votes:
     {% for vote in visible_votes %}
 	    <li>
-            <a href="/votes/cast/{{ vote.id }}">{{ vote.title }}</a>
-            {% if vote.participated_in %} (already participated){% endif %}
+            {% if vote.vote_type == "AnonymousBallot" and vote.participated_in %}
+                <a href="/votes/cast/{{ vote.id }}"><strike>{{ vote.title }}</strike></a>
+            {% else %}
+                <a href="/votes/cast/{{ vote.id }}">{{ vote.title }}</a>
+            {% endif %}
+            {% if vote.participated_in %} (already participated) {% endif %}
+            ({{ vote.closes_in }})
         </li>
     {% endfor %}
     {% else %}

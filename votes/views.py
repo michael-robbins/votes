@@ -22,13 +22,12 @@ def index():
     visible_votes = list()
     owned_votes = list()
 
-    for vote in Vote.query.all():
-        participated_in = VoterParticipation.query.filter_by(vote=vote, voter=voter).first()
+    now = datetime.datetime.now()
+    for vote in Vote.query.filter(Vote.start_time < now, Vote.end_time > now).all():
+        vote.participated_in = user_has_participated(voter, vote)
 
-        if participated_in:
-            vote.participated_in = True
-        else:
-            vote.participated_in = False
+        template = "{days}d, {hours}h and {minutes}m until closed!"
+        vote.closes_in = string_format_delta((vote.end_time - now), template)
 
         visible_votes.append(vote)
 
@@ -297,16 +296,21 @@ def vote_cast_crud(vote_id):
 
     # Ensure both the voter and the vote exist, bail if they're missing
     if not voter:
-        # TODO: Flash 'message'
+        # TODO: Flash "You're not logged in"
         return redirect(LOGIN_THX)
 
     vote = Vote.query.filter_by(id=vote_id).first()
 
     if not vote:
+        # TODO: Flash "Vote doesn't exist"
         return redirect(INDEX_EXISTENCE)
 
+    if not vote_is_live(vote):
+        # They should only have gotten here by messing with the URL!
+        return redirect(INDEX_CHEATER)
+
     # Do not let the user vote again if we're in anonymous mode and they've participated already
-    if vote.vote_type == VOTE_ANONYMOUS and VoterParticipation.query.filter_by(voter=voter, vote=vote).all():
+    if vote.vote_type == VOTE_ANONYMOUS and user_has_participated(voter, vote):
         # TODO: Flash "You've already participated in this vote!"
         return redirect(INDEX_ALREADY_VOTED)
 
