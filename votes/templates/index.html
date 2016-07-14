@@ -16,7 +16,7 @@
     {% for vote in visible_votes %}
 	    <li>
             <a href="/votes/cast/{{ vote.id }}">{{ vote.title }}</a>
-            {% if vote.has_actions %} (already submitted){% endif %}
+            {% if vote.participated_in %} (already participated){% endif %}
         </li>
     {% endfor %}
     {% else %}

@@ -28,10 +28,11 @@ class Vote(db.Model):
     disabled = db.Column(db.Boolean, default=False)
     restrictions = db.Column(db.Text)
 
-    def __init__(self, title, owner, start_time=datetime.datetime.now(), end_time=datetime.datetime.now(),
+    def __init__(self, title, owner, vote_type, start_time=datetime.datetime.now(), end_time=datetime.datetime.now(),
                  restrictions=""):
         self.title = title
         self.owner = owner
+        self.vote_type = vote_type
         self.start_time = start_time
         self.end_time = end_time
         self.restrictions = restrictions
@@ -76,21 +77,27 @@ class VoterAction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     vote_id = db.Column(db.Integer, db.ForeignKey(Vote.id))
     vote = db.relationship("Vote", backref=db.backref("actions", lazy="dynamic"))
-    voter_id = db.Column(db.Integer, db.ForeignKey(Voter.id))
+    voter_id = db.Column(db.Integer, db.ForeignKey(Voter.id), nullable=True)
     voter = db.relationship("Voter", backref=db.backref("actions", lazy="dynamic"))
     submitted = db.Column(db.DateTime, default=datetime.datetime.now)
-    updated = db.Column(db.DateTime, onupdate=datetime.datetime.now, nullable=True)
+    updated = db.Column(db.DateTime, default=datetime.datetime.now)
     question_id = db.Column(db.Integer, db.ForeignKey(VoteQuestion.id))
     question = db.relationship("VoteQuestion", backref=db.backref("actions", lazy="dynamic"))
     choices = db.Column(db.Text)
 
     one_vote_per_person = db.UniqueConstraint("vote", "voter", "question", name="OneVoteActionPerPerson")
 
-    def __init__(self, vote, voter, question, choices):
+    def __init__(self, vote, voter, question, choices, submitted=None, updated=None):
         self.vote = vote
         self.voter = voter
         self.question = question
         self.choices = choices
+
+        if submitted:
+            self.submitted = submitted
+
+        if updated:
+            self.updated = updated
 
     def __repr__(self):
         return "<VoterAction '{0}'>".format(self.choices)

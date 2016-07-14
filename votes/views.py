@@ -6,22 +6,6 @@ from .forms import *
 from .models import *
 from .vote_helper import *
 
-# Redirect strings
-INDEX = "/votes/"
-INDEX_CHEATER = "{0}?you-dirty-cheater-you".format(INDEX)
-INDEX_LOGIN = "{0}?logged-in-like-a-boss".format(INDEX)
-INDEX_SUBMITTED = "{0}?submitted-or-was-it".format(INDEX)
-INDEX_EXISTENCE = "{0}?doesnt-exist-bro".format(INDEX)
-INDEX_BAD_VOTE_ID = "{0}?bad-vote-id-mate".format(INDEX)
-INDEX_BAD_QUESTION_ID = "{0}?bad-vote-id-mate".format(INDEX)
-INDEX_BAD_CHOICE_ID = "{0}?bad-vote-id-mate".format(INDEX)
-INDEX_RMRF = "{0}?rm-rf".format(INDEX)
-
-LOGIN = "/login"
-LOGIN_THX = "{0}?plz-login-k-thx".format(LOGIN)
-LOGIN_THOUGHTS = "{0}?or-not-to-logout".format(LOGIN)
-LOGIN_EMAIL = "{0}?email={1}".format(LOGIN, "{0}")
-
 
 @app.route("/")
 @app.route("/index")
@@ -39,12 +23,12 @@ def index():
     owned_votes = list()
 
     for vote in Vote.query.all():
-        actions = VoterAction.query.filter_by(vote=vote, voter=voter).all()
+        participated_in = VoterParticipation.query.filter_by(vote=vote, voter=voter).first()
 
-        if actions:
-            vote.has_actions = True
+        if participated_in:
+            vote.participated_in = True
         else:
-            vote.has_actions = False
+            vote.participated_in = False
 
         visible_votes.append(vote)
 
@@ -119,11 +103,14 @@ def vote_new():
         return redirect(LOGIN_THX)
 
     new_vote_form = VoteForm()
+    # Remove the delete button, as nothing exists yet!
+    delattr(new_vote_form, "delete")
 
     if new_vote_form.validate_on_submit():
         vote = Vote(
             title=new_vote_form.data.get("title"),
             owner=voter,
+            vote_type=new_vote_form.data.get("vote_type"),
             start_time=new_vote_form.data.get("start_time"),
             end_time=new_vote_form.data.get("end_time")
         )
@@ -210,12 +197,16 @@ def vote_edit(vote_id):
                 vote.title = vote_form.title.data
                 vote.start_time = vote_form.start_time.data
                 vote.end_time = vote_form.end_time.data
+                vote.vote_type = vote_form.vote_type.data
+                vote.disabled = vote_form.vote_type.data
             else:
                 return redirect(INDEX_BAD_VOTE_ID)
         else:
+            # TODO: Figure out why we would allow this logic to occur?
             vote = Vote(
                 title=vote_form.title.data,
                 owner=voter,
+                vote_type=vote_form.vote_type.data,
                 start_time=vote_form.start_time.data,
                 end_time=vote_form.end_time.data
             )
@@ -223,7 +214,6 @@ def vote_edit(vote_id):
         db.session.add(vote)
 
         existing_questions = {question.id: question for question in VoteQuestion.query.filter_by(vote=vote).all()}
-        print(existing_questions)
 
         for question in vote_form.questions:
             question_id = question.data.get("id")
@@ -234,8 +224,7 @@ def vote_edit(vote_id):
                 if vote_question:
                     if vote_question.vote != vote:
                         # User's submitting a vote question that doesn't belong to this vote?
-                        # TODO: Change to a flash
-                        print("User submitted a vote question not belonging to the vote?")
+                        # TODO: Flash "User submitted a vote question not belonging to the vote?"
                         return redirect(INDEX_CHEATER)
 
                     vote_question.question_type = question.question_type.data
@@ -264,8 +253,7 @@ def vote_edit(vote_id):
                     if vote_choice:
                         if vote_choice.question != vote_question:
                             # Users submitting a choice to a different question
-                            # TODO: Change to a flash
-                            print("User submitted for a choice to a different question")
+                            # TODO: Flash "User submitted for a choice to a different question"
                             return redirect(INDEX_CHEATER)
 
                         vote_choice.choice = choice.choice.data
@@ -307,6 +295,7 @@ def vote_cast_crud(vote_id):
     voter_email = session.get("email")
     voter, message = get_voter(voter_email)
 
+    # Ensure both the voter and the vote exist, bail if they're missing
     if not voter:
         # TODO: Flash 'message'
         return redirect(LOGIN_THX)
@@ -316,10 +305,20 @@ def vote_cast_crud(vote_id):
     if not vote:
         return redirect(INDEX_EXISTENCE)
 
+    # Do not let the user vote again if we're in anonymous mode and they've participated already
+    if vote.vote_type == VOTE_ANONYMOUS and VoterParticipation.query.filter_by(voter=voter, vote=vote).all():
+        # TODO: Flash "You've already participated in this vote!"
+        return redirect(INDEX_ALREADY_VOTED)
+
+    # If the user is here, that means they are in TrackedBallot mode, or have not voted already for this vote
+    # Force the resolution of the questions
     questions = list(vote.questions)
+
+    # Build the dynamic form class based of the questions/choices for this vote
     form_class = build_form_for_questions(questions)
     vote_form = form_class()
 
+    # Handle the user attempting to delete their already cast vote
     if vote_form.is_submitted() and vote_form.data.get("delete"):
         for question, answer in questions_and_answers_from_form(vote_form):
             delete_actions(voter, question)
@@ -327,10 +326,9 @@ def vote_cast_crud(vote_id):
         # TODO: Flash 'Vote submission' deleted
         return redirect(INDEX_RMRF)
 
+    # The user is attempting to submit their vote, we must deal with it
     if vote_form.validate_on_submit():
         error_parsing = False
-
-        # TODO: Support anonymous ballot mode
 
         for question, answer in questions_and_answers_from_form(vote_form, vote=vote):
             field = "q_{0}".format(question.id)
@@ -338,7 +336,16 @@ def vote_cast_crud(vote_id):
             action = VoterAction.query.filter_by(vote=vote, voter=voter, question=question).first()
 
             if not action:
-                action = VoterAction(vote, voter, question, "")
+                # If anonymous mode is deleted, then we need to Null out the 'voter' and 'submitted' fields
+                if vote.vote_type == VOTE_ANONYMOUS:
+                    unix_epoch = datetime.datetime(year=1970, month=1, day=1, hour=0, minute=0, second=0)
+                    action = VoterAction(vote=vote, voter=None, question=question, choices="", submitted=unix_epoch,
+                                         updated=unix_epoch)
+                else:
+                    action = VoterAction(vote=vote, voter=voter, question=question, choices="")
+            else:
+                # Update the actions 'updated' column
+                action.updated = datetime.datetime.now()
 
             if question.question_type == QUESTION_FREETEXT:
                 # There's nothing to validate as there are no choices!
@@ -349,14 +356,13 @@ def vote_cast_crud(vote_id):
                 try:
                     choice = VoteChoice.query.get(int(answer))
                 except ValueError:
-                    print("Choice ID is malformed")
-                    getattr(vote_form, field).errors.append("Choice ID is malformed?")
+                    getattr(vote_form, field).errors.append("Choice ID {0} is malformed?".format(answer))
                     error_parsing = True
                     break
 
                 if choice.question != question:
-                    print("Choice ID is not associated to this Question")
-                    getattr(vote_form, field).errors.append("Choice ID is not associated to this Question?")
+                    message = "Choice ID {0} is not associated to this Question?"
+                    getattr(vote_form, field).errors.append(message.format(answer))
                     error_parsing = True
                     break
 
@@ -368,8 +374,7 @@ def vote_cast_crud(vote_id):
                     try:
                         choice = VoteChoice.query.get(int(choice_id))
                     except ValueError:
-                        message = "Choice ID {0} is malformed?"
-                        getattr(vote_form, field).errors.append(message.format(choice_id))
+                        getattr(vote_form, field).errors.append("Choice ID {0} is malformed?".format(choice_id))
                         error_parsing = True
                         break
 
@@ -409,22 +414,31 @@ def vote_cast_crud(vote_id):
 
             db.session.add(action)
 
-        if not error_parsing:
+        if error_parsing:
+            # We failed to save the form, render the vote and the users choices along with any new errors from above
+            # TODO: Flash "Vote not saved"?
+            delattr(vote_form, "delete")
+        else:
+            # Record the participation of that voter for that vote
+            participation = VoterParticipation(vote, voter)
+            db.session.add(participation)
+
+            # 'cast' the vote by committing!
             db.session.commit()
+
             # TODO: Flash "Vote Recorded"
             return redirect(INDEX_SUBMITTED)
-        else:
-            # We failed to save the form
-            delattr(vote_form, "delete")
-            # TODO: Flash "Vote not saved"?
 
+    # The user is attempting to 'view' their ballot, show them their existing vote, or a blank one!
     elif not vote_form.is_submitted():
+        # Given a form can only be populated by an object, we dynamically create one
         class DynamicQuestionData(object):
             pass
 
         question_data = DynamicQuestionData()
         have_data = False
 
+        # Loop over each question on the form, checking to see if the user has any actions
         for question in questions:
             field_name = "q_{0}".format(question.id)
             previous_action = VoterAction.query.filter_by(vote=vote, voter=voter, question=question).first()
@@ -433,6 +447,7 @@ def vote_cast_crud(vote_id):
                 # There has been no previous entry for this question
                 continue
 
+            # Check which question type it is, an de-serialise the data form the DB
             if question.question_type == QUESTION_FREETEXT:
                 setattr(question_data, field_name, previous_action.choices)
                 have_data = True
@@ -446,15 +461,15 @@ def vote_cast_crud(vote_id):
                 old_choices = json.loads(previous_action.choices)
                 setattr(question_data, field_name, old_choices)
 
-        if not have_data:
-            # It's a new vote submission, don't provide an option to delete (as there's not actions to delete)
-            delattr(form_class, "delete")
-        else:
-            # User is reviewing their cast vote, change 'Submit' to 'Update'
+        if have_data:
+            # User is reviewing their cast vote, change 'Submit' to 'Update' to better reflect the situation
             form_class.submit.kwargs["label"] = "Update"
 
-        # Create a new form instantiated with our previously entered data
-        vote_form = form_class(obj=question_data)
+            # Create a new form instantiated with our previously entered data
+            vote_form = form_class(obj=question_data)
+        else:
+            # It's a new vote submission, don't provide an option to delete (as there's not actions to delete)
+            delattr(form_class, "delete")
 
     context = {
         "company": app.config["COMPANY_NAME"],

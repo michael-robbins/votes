@@ -99,10 +99,11 @@ class RankedField(Field):
                 raise ValueError(self.gettext("Ranking is not a valid number for option '{0}'".format(choice_name)))
 
             if choice_id not in choice_ids:
-                raise ValueError(self.gettext("The ID for option '{}' is invalid".format(choice_name)))
+                raise ValueError(self.gettext("The ID for option '{0}' is invalid".format(choice_name)))
 
-            if rank > maximum_rank:
-                raise ValueError(self.gettext("Exceeded maximum available rank of {0}".format(maximum_rank)))
+            if not 1 <= rank <= maximum_rank:
+                raise ValueError(self.gettext("Only rankings between 1 and {0} are allowed for option '{1}'".format(
+                    maximum_rank, choice_name)))
 
             if rank in seen_ranks:
                 message = "Each ranking must be unique, you have more than one instance of the '{0}' rank"

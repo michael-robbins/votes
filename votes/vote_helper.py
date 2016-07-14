@@ -10,11 +10,32 @@ from flask_wtf import Form
 from wtforms.validators import DataRequired
 from wtforms import TextAreaField, RadioField, SelectMultipleField, SubmitField
 
-
+# Question Types
 QUESTION_FREETEXT = "FreeText"
 QUESTION_SINGLECHOICE = "SingleChoice"
 QUESTION_MULTIPLECHOICE = "MultipleChoice"
 QUESTION_RANKED = "Ranked"
+
+# Vote Types
+VOTE_TRACKED = "TrackedBallot"
+VOTE_ANONYMOUS = "AnonymousBallot"
+
+# Redirect URLs
+INDEX = "/votes/"
+INDEX_RMRF = "{0}?rm-rf".format(INDEX)
+INDEX_EXISTENCE = "{0}?doesnt-exist-bro".format(INDEX)
+INDEX_LOGIN = "{0}?logged-in-like-a-boss".format(INDEX)
+INDEX_BAD_VOTE_ID = "{0}?bad-vote-id-mate".format(INDEX)
+INDEX_CHEATER = "{0}?you-dirty-cheater-you".format(INDEX)
+INDEX_SUBMITTED = "{0}?submitted-or-was-it".format(INDEX)
+INDEX_BAD_CHOICE_ID = "{0}?bad-vote-id-mate".format(INDEX)
+INDEX_ALREADY_VOTED = "{0}?already-voted-mate".format(INDEX)
+INDEX_BAD_QUESTION_ID = "{0}?bad-vote-id-mate".format(INDEX)
+
+LOGIN = "/login"
+LOGIN_THX = "{0}?plz-login-k-thx".format(LOGIN)
+LOGIN_EMAIL = "{0}?email={1}".format(LOGIN, "{0}")
+LOGIN_THOUGHTS = "{0}?or-not-to-logout".format(LOGIN)
 
 
 def get_voter(email):
@@ -97,11 +118,13 @@ def build_form_for_questions(questions):
                     # There's nothing to check here, they can only submit one (afaik)
                     pass
                 elif question_type == QUESTION_MULTIPLECHOICE:
-                    # Ensure they are only passing in <= question_type_max choices
-                    if len(self.data[form_field]) > question_type_max:
-                        message = "Please only choose up to {0} options"
-                        getattr(self, form_field).errors.append(message.format(question_type_max))
+                    # Ensure they are only passing in question_type_max choices
+                    if not question_type_max <= len(self.data[form_field]) <= question_type_max:
+                        message = "Please choose {0} options (you specified {1})"
+                        getattr(self, form_field).errors.append(message.format(question_type_max,
+                                                                               len(self.data[form_field])))
                         return False
+
                 elif question_type == QUESTION_FREETEXT:
                     # There's nothing to check here, it's a text box
                     pass
@@ -116,7 +139,7 @@ def build_form_for_questions(questions):
                             continue
 
                         if int(value) > question_type_max:
-                            message = "You've entered a rank above the maximum allowed ({0}) for this question"
+                            message = "You've entered a ranking above the maximum allowed ({0}) for this question"
                             getattr(self, form_field).errors.append(message.format(question_type_max))
                             return False
 
