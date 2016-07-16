@@ -16,9 +16,9 @@
     {% for vote in visible_votes %}
 	    <li>
             {% if vote.vote_type == "AnonymousBallot" and vote.participated_in %}
-                <a href="/votes/cast/{{ vote.id }}"><strike>{{ vote.title }}</strike></a>
+                <a href="/votes/{{ vote.id }}/cast"><strike>{{ vote.title }}</strike></a>
             {% else %}
-                <a href="/votes/cast/{{ vote.id }}">{{ vote.title }}</a>
+                <a href="/votes/{{ vote.id }}/cast">{{ vote.title }}</a>
             {% endif %}
             {% if vote.participated_in %} (already participated) {% endif %}
             ({{ vote.closes_in }})
@@ -36,7 +36,7 @@
     <div id="owned_votes">
     {% for vote in owned_votes %}
         <li>
-            <a href="/votes/edit/{{ vote.id }}">{{ vote.title }}</a>
+            <a href="/votes/{{ vote.id }}/edit">{{ vote.title }}</a>
         </li>
     {% endfor %}
     </div>

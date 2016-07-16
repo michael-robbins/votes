@@ -24,15 +24,16 @@ class BaseConfig(object):
 
     # The Mail Exchange server and credentials that passcode emails will be sent to
     MX_SERVER = "localhost"
-    MX_USER = "username"
-    MX_PASSWORD = "password"
-
-    # Various passcode strength settings
-    PASSCODE_LENGTH = 8
-    PASSCODE_POOL = string.ascii_uppercase + string.digits
+    MX_USER = ""
+    MX_PASSWORD = ""
 
     # Branding options
-    COMPANY_NAME = "CompanyName"
+    COMPANY_NAME = "DefaultCompany"
+    COMPANY_IMAGE = ""  # URL to your company's image
+
+    # Passcode settings
+    PASSCODE_LENGTH = 8
+    PASSCODE_POOL = string.ascii_uppercase + string.digits
     PASSCODE_EMAIL_SUBJECT = "{0} Votes - Passcode Request".format(COMPANY_NAME)
 
     # Available template variables:
@@ -56,3 +57,6 @@ Warm Regards,
 
     # Iterable of email addresses that will be treated like vote owners for vote editing purposes
     ADMIN_EMAILS = list()
+
+    # Do we allow non-admin users to create votes
+    EVERYONE_CAN_CREATE_VOTES = False

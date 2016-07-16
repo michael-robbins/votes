@@ -1,5 +1,7 @@
 import json
 
+from collections import defaultdict, OrderedDict
+
 from flask import render_template, redirect, request, session
 
 from .forms import *
@@ -67,8 +69,8 @@ def login():
         template = "email.html"
         title = "Enter your email"
     else:
-        # TODO: Hack, remove this later, saves having to log in each time, as each reload deletes the old login cookie!
-        if email in app.config["ADMIN_EMAILS"]:
+        # TODO: Hack, remove this later, saves having to log in each time
+        if app.config["TESTING"]:
             session["email"] = email
             return redirect(INDEX_LOGIN)
 
@@ -101,9 +103,12 @@ def vote_new():
         # TODO: Flash 'message'
         return redirect(LOGIN_THX)
 
-    new_vote_form = VoteForm()
+    vote_form_class = VoteForm
+
     # Remove the delete button, as nothing exists yet!
-    delattr(new_vote_form, "delete")
+    delattr(vote_form_class, "delete")
+
+    new_vote_form = vote_form_class()
 
     if new_vote_form.validate_on_submit():
         vote = Vote(
@@ -143,7 +148,7 @@ def vote_new():
     return render_template("vote_crud.html", **context)
 
 
-@app.route("/votes/edit/<int:vote_id>", methods=["GET", "POST"])
+@app.route("/votes/<int:vote_id>/edit", methods=["GET", "POST"])
 def vote_edit(vote_id):
     voter_email = session.get("email")
     voter, message = get_voter(voter_email)
@@ -152,7 +157,7 @@ def vote_edit(vote_id):
         # TODO: Flash 'message'
         return redirect(LOGIN_THX)
 
-    vote = Vote.query.filter_by(id=vote_id).first()
+    vote = Vote.query.get(vote_id)
 
     if not vote:
         # TODO: Flash "Vote doesn't exist"
@@ -283,13 +288,13 @@ def vote_edit(vote_id):
         "company": app.config["COMPANY_NAME"],
         "form": vote_form,
         "header": "Edit Vote",
-        "post_url": "/votes/edit/{0}".format(vote.id),
+        "post_url": "/votes/{0}/edit".format(vote.id),
     }
 
     return render_template("vote_crud.html", **context)
 
 
-@app.route("/votes/cast/<int:vote_id>", methods=["GET", "POST"])
+@app.route("/votes/<int:vote_id>/cast", methods=["GET", "POST"])
 def vote_cast_crud(vote_id):
     voter_email = session.get("email")
     voter, message = get_voter(voter_email)
@@ -299,7 +304,7 @@ def vote_cast_crud(vote_id):
         # TODO: Flash "You're not logged in"
         return redirect(LOGIN_THX)
 
-    vote = Vote.query.filter_by(id=vote_id).first()
+    vote = Vote.query.get(vote_id)
 
     if not vote:
         # TODO: Flash "Vote doesn't exist"
@@ -468,12 +473,12 @@ def vote_cast_crud(vote_id):
         if have_data:
             # User is reviewing their cast vote, change 'Submit' to 'Update' to better reflect the situation
             form_class.submit.kwargs["label"] = "Update"
-
-            # Create a new form instantiated with our previously entered data
-            vote_form = form_class(obj=question_data)
         else:
             # It's a new vote submission, don't provide an option to delete (as there's not actions to delete)
             delattr(form_class, "delete")
+
+        # Create a new form instantiated with our previously entered data (or empty object if there's no data)
+        vote_form = form_class(obj=question_data)
 
     context = {
         "company": app.config["COMPANY_NAME"],
@@ -482,3 +487,108 @@ def vote_cast_crud(vote_id):
     }
 
     return render_template("vote_cast.html", **context)
+
+
+@app.route("/votes/<int:vote_id>/results")
+def vote_result(vote_id):
+    voter_email = session.get("email")
+    voter, message = get_voter(voter_email)
+
+    # Ensure both the voter and the vote exist, bail if they're missing
+    if not voter:
+        # TODO: Flash "You're not logged in"
+        return redirect(LOGIN_THX)
+
+    vote = Vote.query.get(vote_id)
+
+    if not vote:
+        # TODO: Flash "Vote doesn't exist"
+        return redirect(INDEX_EXISTENCE)
+
+    vote.is_live = vote_is_live(vote)
+
+    questions = VoteQuestion.query.filter_by(vote=vote).all()
+    results = defaultdict(dict)
+    choice_names = dict()
+
+    class ChoiceResults(object):
+        pass
+
+    for question in questions:
+        actions = VoterAction.query.filter_by(vote=vote, question=question).all()
+        choices = VoteChoice.query.filter_by(question=question).all()
+
+        question_key = question.id
+
+        # Set the default result for this question
+        if question.question_type == QUESTION_FREETEXT:
+            results[question_key] = list()
+
+            if vote.is_live:
+                results[question_key].append("Vote is live, so no results are available for FreeText questions yet.")
+        else:
+            # All other types will have their individual choices incremented according to the question_type
+            for choice in choices:
+                choice_id = int(choice.id)
+                results[question_key][choice_id] = ChoiceResults()
+                results[question_key][choice_id].name = VoteChoice.query.get(choice_id).choice
+                results[question_key][choice_id].results = 0
+
+        for action in actions:
+            if question.question_type == QUESTION_FREETEXT:
+                # We just append each persons text into the results list for this question, there's no counting
+                if not vote.is_live:
+                    results[question_key].append('"{0}"'.format(action.choices))
+
+            elif question.question_type == QUESTION_MULTIPLECHOICE:
+                # Each 'selected' choice in a multiple choice question increments the vote for that choice by 1
+                for choice_id in str(action.choices).split(","):
+                    choice_id = int(choice_id)
+                    results[question_key][choice_id].results += 1
+
+            elif question.question_type == QUESTION_SINGLECHOICE:
+                # Each persons choice increments the vote for that choice by 1
+                choice_id = int(action.choices)
+                results[question_key][choice_id].results += 1
+
+            elif question.question_type == QUESTION_RANKED:
+                # Each choice gets incremented by the inverse of the rank chosen ((question_type_max + 1) - rank)
+                for choice_id, rank in json.loads(action.choices).items():
+                    choice_id = int(choice_id)
+                    results[question_key][choice_id].results += (int(question.question_type_max) + 1) - int(rank)
+
+        # Sort the results by highest voted
+        if question.question_type != QUESTION_FREETEXT:
+            results[question_key] = OrderedDict(sorted(results[question_key].items(), key=lambda x: x[1].results, reverse=True))
+
+            if vote.is_live:
+                # Used for when a Vote is live, and we want to mask the choice names
+                # We handle up to 26 * 26 choices per question (let's hope we never get that many!
+                next_choice = 65  # 'A'
+                choice_prefix = ""
+
+                for choice_id, result in results[question_key].items():
+                    result.name = "Option {0}{1}".format(choice_prefix, chr(next_choice))
+
+                    next_choice += 1
+                    if next_choice > 90:
+                        if not choice_prefix:
+                            choice_prefix = "A"
+                        else:
+                            if ord(choice_prefix) > ord("Z"):
+                                raise Exception("Too many choices!")
+
+                            choice_prefix = chr(ord(choice_prefix) + 1)
+
+                        # Reset the masked choice back to 'A' and repeat
+                        next_choice = 65
+
+    context = {
+        "company": app.config["COMPANY_NAME"],
+        "vote": vote,
+        "questions": questions,
+        "choice_names": choice_names,
+        "results": results
+    }
+
+    return render_template("vote_result.html", **context)

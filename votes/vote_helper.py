@@ -6,6 +6,8 @@ from . import app, db
 from .models import VoterAction, VoteQuestion, Voter, VoterParticipation
 from .forms import RankedField
 
+from flask import session
+
 from flask_wtf import Form
 from wtforms.validators import DataRequired
 from wtforms import TextAreaField, RadioField, SelectMultipleField, SubmitField
@@ -266,9 +268,11 @@ def is_vote_owner(vote, voter):
     :return: Boolean
     """
     if vote.owner == voter:
+        print("Real owner")
         return True
 
-    if vote.owner.email in app.config["ADMIN_EMAILS"]:
+    if session.get("email") in app.config["ADMIN_EMAILS"]:
+        print("Fake owner")
         return True
 
     return False

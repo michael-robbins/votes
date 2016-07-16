@@ -1,7 +1,7 @@
-TODO List (ordered by priority)
-* Enforce the start and end times of the vote (not visible/cast-able)
-** Update the index to print the server time
-** Update the index to print a delta (time_vote_ends - now) as 'time left until vote closes'
+TODO List (ordered by priority):
 * Make it look pretty with bootstrap
+* Make results all java-script-y with live updates
+** Will need an API endpoint to return results from
 * Produce a README.md
 * Add in a question_type_min and rename those fields to question_type_max_choices/question_type_min_choices
+* Support COMPANY_IMAGE setting

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>{{ vote.title }}</h1>
+    <hr />
+
+    {% for question in questions %}
+        <h3>{{ question.question }}</h3>
+        <p>
+            {% if question.question_type == "FreeText" %}
+            <ul>
+                {% for freetext_answer in results[question.id] %}
+                <li>{{ freetext_answer }}</li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <ul>
+                {% for choice_id in results[question.id] %}
+                <li>{{ results[question.id][choice_id].name }}: {{ results[question.id][choice_id].results }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </p>
+    {% endfor %}
+
+    <p><a href="/votes">Go back</a></p>
+{% endblock %}

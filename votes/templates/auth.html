@@ -3,8 +3,9 @@
 {% block content %}
     <h1>{{ form.title }}</h1>
 
-    <form action="" method="post" name="login">
+    <form action="/login" method="post">
         {{ form.hidden_tag() }}
+
         <div>Email: {{ form.email(readonly=true) }}</div>
         {% for error in form.email.errors %}
             <div style="color: red;">[{{ error }}]</div>
@@ -15,6 +16,7 @@
             <div style="color: red;">[{{ error }}]</div>
         {% endfor %}
         <p><input type="submit" value="Authenticate"></p>
+
         <p><a href="/login">Go back</a></p>
     </form>
 {% endblock %}

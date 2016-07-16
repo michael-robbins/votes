@@ -4,13 +4,13 @@
     <h1>{{ vote.title }}</h1>
 
     {% if vote.vote_type == "TrackedBallot" %}
-    <h3>This is a Tracked Ballot, your vote WILL be tied to your email address.</h3>
+    <h3>This is a Tracked Ballot, your vote WILL be tied to your email address, and you WILL be able to edit your vote after you submit!</h3>
     {% elif vote.vote_type == "AnonymousBallot" %}
-    <h3>This is an Anonymous Ballot, your vote WILL NOT be tied to anything. Promise.</h3>
+    <h3>This is an Anonymous Ballot, your vote WILL NOT be tied to anything, and you WILL NOT be able to edit your vote after you submit!</h3>
     {% endif %}
     <hr />
 
-    <form action="/votes/cast/{{ vote.id }}" method="post">
+    <form action="/votes/{{ vote.id }}/cast" method="post">
         {{ form.hidden_tag() }}
 
         {% for field in form._fields if form[field].type not in ["CSRFTokenField", "SubmitField"] %}
@@ -26,6 +26,6 @@
             {{ form.submit }}
             {{ form.delete }}
         </p>
-        <p><a href="/">Go back</a></p>
     </form>
+    <p><a href="/votes">Go back</a></p>
 {% endblock %}
