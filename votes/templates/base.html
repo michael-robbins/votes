@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    {% block head %}
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="{{ url_for("static", filename="js/bootstrap.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/jquery-3.1.0.js") }}"></script>
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/bootstrap.css") }}">
+
     <title>{{ company }} Votes{% block title %}{% endblock %}</title>
-    {% endblock %}
+    {% block head %}{% endblock %}
 </head>
 <body>
     <a style="position: absolute; top: 5px; right: 5px;" href="/logout">Log Out</a>

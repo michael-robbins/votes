@@ -42,6 +42,7 @@ def index():
         "company": app.config["COMPANY_NAME"],
         "visible_votes": visible_votes,
         "owned_votes": owned_votes,
+        "can_create_votes": app.config["EVERYONE_CAN_CREATE_VOTES"] or voter_email in app.config["ADMIN_EMAILS"]
     }
 
     return render_template("index.html", **context)
@@ -70,7 +71,7 @@ def login():
         title = "Enter your email"
     else:
         # TODO: Hack, remove this later, saves having to log in each time
-        if app.config["TESTING"]:
+        if app.config["TESTING"] or email in app.config["ADMIN_EMAILS"]:
             session["email"] = email
             return redirect(INDEX_LOGIN)
 
@@ -100,8 +101,12 @@ def vote_new():
     voter, message = get_voter(voter_email)
 
     if not voter:
-        # TODO: Flash 'message'
+        # TODO: Flash 'Please log in first'
         return redirect(LOGIN_THX)
+
+    if not app.config["EVERYONE_CAN_CREATE_VOTES"] and voter_email not in app.config["ADMIN_EMAILS"]:
+        # TODO: Flash 'We only allow admins to create emails at the moment'
+        return redirect(INDEX_CHEATER)
 
     vote_form_class = VoteForm
 

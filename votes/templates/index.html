@@ -6,9 +6,11 @@
       Hello, {{ name }}
     </p>
 
+    {% if can_create_votes %}
     <p class="important">
         <a href="/votes/new">Create a new Vote</a>
     </p>
+    {% endif %}
 
     <div id="votes">
     {% if visible_votes %}
