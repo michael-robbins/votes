@@ -14,11 +14,25 @@
         <form action="/votes/{{ vote.id }}/cast" method="post">
             {{ form.hidden_tag() }}
             {% for field in form._fields.values() if field.type not in ["CSRFTokenField", "SubmitField"] %}
+            {% if field.type == "RadioField" %}
+                {% set tooltip_text = "Single choice field, please select a single option" %}
+            {% elif field.type == "SelectMultipleField" %}
+                {% set tooltip_text = "Multiple choice field, select as many choices as you want up to the limit" %}
+            {% elif field.type == "RankedField" %}
+                {% set tooltip_text = "Place a ranking next to each option up to the limit" %}
+            {% elif field.type == "TextAreaField" %}
+                {% set tooltip_text = "Freetext field, just enter text into the box" %}
+            {% endif %}
             <div class="row">
                 <div class="col-md-4">
                     <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <h4 class="panel-title">{{ field.label }}</h4>
+                            <h4 class="panel-title">
+                                {{ field.label }}
+                                <a href="#" data-toggle="tooltip" title="{{ tooltip_text }}">
+                                    <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span>
+                                </a>
+                            </h4>
                         </div>
                         <div class="panel-body">
                             {% if field.type == "RadioField" %}

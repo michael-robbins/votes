@@ -2,7 +2,7 @@ import json
 
 from collections import defaultdict, OrderedDict
 
-from flask import render_template, redirect, request
+from flask import render_template, redirect, request, flash
 
 from .forms import *
 from .models import *
@@ -18,8 +18,8 @@ def index():
     voter, message = get_voter(voter_email)
 
     if not voter:
-        # TODO: Flash 'message'
-        return redirect(LOGIN_THX)
+        flash("You're not logged in mate.", "danger")
+        return redirect(LOGIN)
 
     open_votes = list()
     closed_votes = list()
@@ -60,7 +60,8 @@ def index():
 @app.route("/logout")
 def logout():
     session["email"] = ""
-    return redirect(LOGIN_THOUGHTS)
+    flash("Logged out successfully", "success")
+    return redirect(LOGIN)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -109,12 +110,12 @@ def vote_new():
     voter, message = get_voter(voter_email)
 
     if not voter:
-        # TODO: Flash 'Please log in first'
+        flash("You're not logged in mate.", "danger")
         return redirect(LOGIN_THX)
 
     if not app.config["EVERYONE_CAN_CREATE_VOTES"] and voter_email not in app.config["ADMIN_EMAILS"]:
-        # TODO: Flash 'We only allow admins to create emails at the moment'
-        return redirect(INDEX_CHEATER)
+        flash("We're only allowing admins to create votes at the moment.", "warning")
+        return redirect(INDEX)
 
     vote_form_class = VoteForm
 
