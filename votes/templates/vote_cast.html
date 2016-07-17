@@ -1,31 +1,57 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>{{ vote.title }}</h1>
+    <div style="padding-left: 10px;">
+        <div class="page-header">
+            <h1>{{ vote.title }}</h1>
+            {% if vote.vote_type == "TrackedBallot" %}
+            <h3><small>This is a Tracked Ballot, your vote WILL be tied to your email address, and you WILL be able to edit your vote after you submit!</small></h3>
+            {% elif vote.vote_type == "AnonymousBallot" %}
+            <h3><small>This is an Anonymous Ballot, your vote WILL NOT be tied to anything, and you WILL NOT be able to edit your vote after you submit!</small></h3>
+            {% endif %}
+        </div>
 
-    {% if vote.vote_type == "TrackedBallot" %}
-    <h3>This is a Tracked Ballot, your vote WILL be tied to your email address, and you WILL be able to edit your vote after you submit!</h3>
-    {% elif vote.vote_type == "AnonymousBallot" %}
-    <h3>This is an Anonymous Ballot, your vote WILL NOT be tied to anything, and you WILL NOT be able to edit your vote after you submit!</h3>
-    {% endif %}
-    <hr />
-
-    <form action="/votes/{{ vote.id }}/cast" method="post">
-        {{ form.hidden_tag() }}
-
-        {% for field in form._fields if form[field].type not in ["CSRFTokenField", "SubmitField"] %}
-            <div>
-                <h3>{{ form[field].label }}:</h3> {{ form[field] }}
+        <form action="/votes/{{ vote.id }}/cast" method="post">
+            {{ form.hidden_tag() }}
+            {% for field in form._fields.values() if field.type not in ["CSRFTokenField", "SubmitField"] %}
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">{{ field.label }}</h4>
+                        </div>
+                        <div class="panel-body">
+                            {% if field.type == "RadioField" %}
+                            {% for subfield in field %}
+                                <div>{{ subfield }} {{ subfield.label }}</div>
+                            {% endfor %}
+                            {% elif field.type == "RankedField" %}
+                            {% for subfield in field %}
+                                <div class="form-horizontal">
+                                    <div class="control-group row-fluid form-inline">
+                                        {{ subfield(class="form-control", size="1") }}
+                                        &nbsp;{{ subfield.label }}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            {% else %}
+                            {{ field }}
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <div style="color: red;">[{{ error }}]</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
             </div>
-            {% for error in form[field].errors %}
-                <div style="color: red;">[{{ error }}]</div>
             {% endfor %}
-        {% endfor %}
-
-        <p>
-            {{ form.submit }}
-            {{ form.delete }}
-        </p>
-    </form>
-    <p><a href="/votes">Go back</a></p>
+            <p>
+                {{ form.submit(class="btn btn-default") }}
+                {% if form.delete %}
+                {{ form.delete(class="btn btn-default") }}
+                {% endif %}
+            </p>
+        </form>
+        <p><input type="button" class="btn btn-default" onclick="location.href='/votes';" value="Go Back" /></p>
+    </div>
 {% endblock %}

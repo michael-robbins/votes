@@ -106,7 +106,7 @@ def build_form_for_questions(questions):
     for question in questions:
         field_name = "q_{0}".format(question.id)
         if question.question_type == QUESTION_FREETEXT:
-            field = TextAreaField(question.question, validators=[DataRequired()])
+            field = TextAreaField(question.question, validators=[DataRequired()], render_kw={"class": "form-control"})
             setattr(DynamicQuestionForm, field_name, field)
         elif question.question_type == QUESTION_SINGLECHOICE:
             choices = [(str(choice.id), choice.choice) for choice in list(question.choices)]
@@ -114,7 +114,8 @@ def build_form_for_questions(questions):
             setattr(DynamicQuestionForm, field_name, field)
         elif question.question_type == QUESTION_MULTIPLECHOICE:
             choices = [(str(choice.id), choice.choice) for choice in list(question.choices)]
-            field = SelectMultipleField(question.question, choices=choices, validators=[DataRequired()])
+            field = SelectMultipleField(question.question, choices=choices, validators=[DataRequired()],
+                                        render_kw={"class": "form-control"})
             setattr(DynamicQuestionForm, field_name, field)
         elif question.question_type == QUESTION_RANKED:
             choices = [(str(choice.id), choice.choice) for choice in list(question.choices)]
@@ -268,11 +269,9 @@ def is_vote_owner(vote, voter):
     :return: Boolean
     """
     if vote.owner == voter:
-        print("Real owner")
         return True
 
     if session.get("email") in app.config["ADMIN_EMAILS"]:
-        print("Fake owner")
         return True
 
     return False

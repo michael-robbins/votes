@@ -1,0 +1,26 @@
+html, body, .container {
+    height: 80%;
+}
+
+.container {
+    display: table;
+}
+
+.vertical-center-row {
+    display: table-cell;
+    vertical-align: middle;
+    width: 50%;
+}
+
+.footer {
+    position:fixed;
+    right: 5px;
+    bottom: 20px;
+    background-color: white;
+}
+
+.fixed-top-right {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+}

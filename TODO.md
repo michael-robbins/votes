@@ -1,5 +1,6 @@
 TODO List (ordered by priority):
-* Make it look pretty with bootstrap
+* Make it look pretty with bootstrap (In progress)
+* Implement results as progress bars (stacked/what-not)
 * Make results all java-script-y with live updates
 ** Will need an API endpoint to return results from
 * Produce a README.md

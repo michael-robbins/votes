@@ -2,7 +2,7 @@ import json
 
 from collections import defaultdict, OrderedDict
 
-from flask import render_template, redirect, request, session
+from flask import render_template, redirect, request
 
 from .forms import *
 from .models import *
@@ -21,28 +21,37 @@ def index():
         # TODO: Flash 'message'
         return redirect(LOGIN_THX)
 
-    visible_votes = list()
+    open_votes = list()
+    closed_votes = list()
     owned_votes = list()
 
     now = datetime.datetime.now()
-    for vote in Vote.query.filter(Vote.start_time < now, Vote.end_time > now).all():
+    for vote in Vote.query.all():
         vote.participated_in = user_has_participated(voter, vote)
 
-        template = "{days}d, {hours}h and {minutes}m until closed!"
+        template = "{days}d, {hours}h and {minutes}m"
         vote.closes_in = string_format_delta((vote.end_time - now), template)
 
-        visible_votes.append(vote)
+        if vote.start_time < now < vote.end_time:
+            open_votes.append(vote)
+
+        if vote.end_time <= now:
+            closed_votes.append(vote)
 
         if is_vote_owner(vote, voter):
             owned_votes.append(vote)
 
+    closed_votes.sort(key=lambda x: x.end_time, reverse=True)
+    owned_votes.sort(key=lambda x: x.end_time, reverse=True)
+
     context = {
-        "name": voter_email,
         "voter": voter,
-        "company": app.config["COMPANY_NAME"],
-        "visible_votes": visible_votes,
+        "title": "{0} Votes!".format(app.config["COMPANY_NAME"]),
+        "open_votes": open_votes,
+        "closed_votes": closed_votes,
         "owned_votes": owned_votes,
-        "can_create_votes": app.config["EVERYONE_CAN_CREATE_VOTES"] or voter_email in app.config["ADMIN_EMAILS"]
+        "can_create_votes": app.config["EVERYONE_CAN_CREATE_VOTES"] or voter_email in app.config["ADMIN_EMAILS"],
+        "quip": "Totally not rigged, promise.",
     }
 
     return render_template("index.html", **context)
@@ -68,7 +77,6 @@ def login():
             return redirect(LOGIN_EMAIL.format(voter.email))
 
         template = "email.html"
-        title = "Enter your email"
     else:
         # TODO: Hack, remove this later, saves having to log in each time
         if app.config["TESTING"] or email in app.config["ADMIN_EMAILS"]:
@@ -83,13 +91,13 @@ def login():
             return redirect(INDEX_LOGIN)
 
         template = "auth.html"
-        title = "Enter your passcode"
         login_form.email.data = email
 
     context = {
         "company": app.config["COMPANY_NAME"],
-        "title": title,
-        "form": login_form
+        "title": "{0} Votes!".format(app.config["COMPANY_NAME"]),
+        "form": login_form,
+        "quip": "Totally not rigged, promise.",
     }
 
     return render_template(template, **context)
@@ -111,7 +119,8 @@ def vote_new():
     vote_form_class = VoteForm
 
     # Remove the delete button, as nothing exists yet!
-    delattr(vote_form_class, "delete")
+    if hasattr(vote_form_class, "delete"):
+        delattr(vote_form_class, "delete")
 
     new_vote_form = vote_form_class()
 
@@ -144,10 +153,11 @@ def vote_new():
         return redirect(INDEX_SUBMITTED)
 
     context = {
-        "company": app.config["COMPANY_NAME"],
+        "voter": voter,
         "form": new_vote_form,
         "header": "New Vote",
         "post_url": "/votes/new",
+        "quip": "Totally not rigged, promise.",
     }
 
     return render_template("vote_crud.html", **context)
@@ -207,7 +217,7 @@ def vote_edit(vote_id):
                 vote.start_time = vote_form.start_time.data
                 vote.end_time = vote_form.end_time.data
                 vote.vote_type = vote_form.vote_type.data
-                vote.disabled = vote_form.vote_type.data
+                vote.disabled = vote_form.disabled.data
             else:
                 return redirect(INDEX_BAD_VOTE_ID)
         else:
@@ -290,10 +300,11 @@ def vote_edit(vote_id):
             pass
 
     context = {
-        "company": app.config["COMPANY_NAME"],
+        "voter": voter,
         "form": vote_form,
         "header": "Edit Vote",
         "post_url": "/votes/{0}/edit".format(vote.id),
+        "quip": "Totally not rigged, promise.",
     }
 
     return render_template("vote_crud.html", **context)
@@ -486,9 +497,10 @@ def vote_cast_crud(vote_id):
         vote_form = form_class(obj=question_data)
 
     context = {
-        "company": app.config["COMPANY_NAME"],
+        "voter": voter,
         "vote": vote,
-        "form": vote_form
+        "form": vote_form,
+        "quip": "Totally not rigged, promise."
     }
 
     return render_template("vote_cast.html", **context)
@@ -589,11 +601,12 @@ def vote_result(vote_id):
                         next_choice = 65
 
     context = {
-        "company": app.config["COMPANY_NAME"],
+        "voter": voter,
         "vote": vote,
         "questions": questions,
         "choice_names": choice_names,
-        "results": results
+        "results": results,
+        "quip": "Totally not rigged, promise.",
     }
 
     return render_template("vote_result.html", **context)

@@ -1,22 +1,30 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>{{ form.title }}</h1>
-
-    <form action="/login" method="post">
-        {{ form.hidden_tag() }}
-
-        <div>Email: {{ form.email(readonly=true) }}</div>
-        {% for error in form.email.errors %}
-            <div style="color: red;">[{{ error }}]</div>
-        {% endfor %}
-        <br />
-        <div>Passcode: {{ form.passcode }}</div>
-        {% for error in form.passcode.errors %}
-            <div style="color: red;">[{{ error }}]</div>
-        {% endfor %}
-        <p><input type="submit" value="Authenticate"></p>
-
-        <p><a href="/login">Go back</a></p>
-    </form>
+    <div class="container">
+        <div class="vertical-center-row">
+            <div align="center">
+                <form method="post">
+                    {{ form.hidden_tag() }}
+                    <div class="page-header">
+                        <h1>{{ title }}</h1>
+                    </div>
+                    {{ form.email(readonly=true, class="form-control") }}
+                    {% for error in form.email.errors %}
+                        <p><div class="alert alert-warning" role="alert">{{ error }}</div></p>
+                    {% endfor %}
+                    <br />
+                    <div class="input-group">
+                        {{ form.passcode(class="form-control", placeholder="Passcode") }}
+                        <span class="input-group-btn">
+                            <button class="btn btn-primary" type="submit">Authenticate</button>
+                        </span>
+                    </div>
+                    {% for error in form.passcode.errors %}
+                    <p><div class="alert alert-danger" role="alert">{{ error }}</div></p>
+                    {% endfor %}
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}

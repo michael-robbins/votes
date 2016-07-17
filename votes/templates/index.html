@@ -1,47 +1,100 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>{{ company }} Votes!</h1>
-    <p class="important">
-      Hello, {{ name }}
-    </p>
+    <div style="padding:10px;">
+        <div class="page-header"><h1>{{ title }}</h1></div>
+        <div class="row">
+            <div class="col-md-1">
+                {% if can_create_votes %}
+                <p>
+                    <input type="button" class="btn btn-default" onclick="location.href='/votes/new';" value="Create a new Vote" />
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% if open_votes %}
+        <div class="row">
+            <div class="col-md-4">
+                <div class="panel panel-primary">
+                    <div class="panel-heading"><b>Your currently available votes</b></div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Vote</th>
+                                <th>Participated?</th>
+                                <th>Closes In</th>
+                                <th>Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vote in open_votes %}
+                            <tr>
+                                <td>
+                                    {% if vote.vote_type == "AnonymousBallot" and vote.participated_in %}
+                                    <a href="/votes/{{ vote.id }}/cast"><strike>{{ vote.title }}</strike></a>
+                                    {% else %}
+                                    <a href="/votes/{{ vote.id }}/cast">{{ vote.title }}</a>
+                                    {% endif %}
+                                </td>
+                                <td>{% if vote.participated_in %}Yes{% else %}No{% endif %}</td>
+                                <td>{{ vote.closes_in }}</td>
+                                <td><a href="/votes/{{ vote.id }}/results">Click Here</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-    {% if can_create_votes %}
-    <p class="important">
-        <a href="/votes/new">Create a new Vote</a>
-    </p>
-    {% endif %}
+        {% if closed_votes %}
+        <div class="row">
+            <div class="col-md-4">
+                <div class="panel panel-primary">
+                    <div class="panel-heading"><b>Closed Votes</b></div>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Vote</th>
+                                <th>Participated?</th>
+                                <th>Closed</th>
+                                <th>Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vote in closed_votes %}
+                            <tr>
+                                <td>{{ vote.title }}</td>
+                                <td>{% if vote.participated_in %}Yes{% else %}No{% endif %}</td>
+                                <td>{{ vote.end_time }}</td>
+                                <td><a href="/votes/{{ vote.id }}/results">Click Here</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-    <div id="votes">
-    {% if visible_votes %}
-    Your currently available votes:
-    {% for vote in visible_votes %}
-	    <li>
-            {% if vote.vote_type == "AnonymousBallot" and vote.participated_in %}
-                <a href="/votes/{{ vote.id }}/cast"><strike>{{ vote.title }}</strike></a>
-            {% else %}
-                <a href="/votes/{{ vote.id }}/cast">{{ vote.title }}</a>
-            {% endif %}
-            {% if vote.participated_in %} (already participated) {% endif %}
-            ({{ vote.closes_in }})
-        </li>
-    {% endfor %}
-    {% else %}
-    There are no available votes!
-    {% endif %}
+        {% if owned_votes %}
+        <div class="row">
+            <div class="col-md-2">
+                <div class="panel panel-primary">
+                    <div class="panel-heading"><b>Votes you can administer</b></div>
+                    <table class="table">
+                        <tbody>
+                            {% for vote in owned_votes %}
+                            <tr>
+                                <td><a href="/votes/{{ vote.id }}/edit">{{ vote.title }}</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
-
-
-    {% if owned_votes %}
-    <br />
-    Votes you own:
-    <div id="owned_votes">
-    {% for vote in owned_votes %}
-        <li>
-            <a href="/votes/{{ vote.id }}/edit">{{ vote.title }}</a>
-        </li>
-    {% endfor %}
-    </div>
-    {% endif %}
-
 {% endblock %}

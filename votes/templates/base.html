@@ -4,26 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <script src="{{ url_for("static", filename="js/jquery-2.2.4.js") }}"></script>
     <script src="{{ url_for("static", filename="js/bootstrap.js") }}"></script>
-    <script src="{{ url_for("static", filename="js/jquery-3.1.0.js") }}"></script>
+
     <link rel="stylesheet" href="{{ url_for("static", filename="css/bootstrap.css") }}">
+    <link rel="stylesheet" href="{{ url_for("static", filename="css/votes.css") }}">
 
     <title>{{ company }} Votes{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <a style="position: absolute; top: 5px; right: 5px;" href="/logout">Log Out</a>
-    <div id="messages">
+    {% if voter %}
+    <div class="fixed-top-right">
+        {{ voter.email }} &nbsp; <input type="button" class="btn btn-danger" onclick="location.href='/logout';" value="Log Out" />
+    </div>
+    {% endif %}
+
     {% with messages = get_flashed_messages() %}
-        {% if messages %}
+    {% if messages %}
+    <div id="messages">
         <ul>
         {% for message in messages %}
             <li>{{ message }} </li>
         {% endfor %}
         </ul>
-        {% endif %}
-    {% endwith %}
     </div>
-    <div id="content">{% block content %}{% endblock %}</div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+    <div class="footer"><span class="glyphicon glyphicon-thumbs-up" aria-hidden="true"></span> {{ quip }}</div>
 </body>
 </html>

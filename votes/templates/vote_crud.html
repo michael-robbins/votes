@@ -15,60 +15,82 @@
 {%- endmacro %}
 
 {% block content %}
-    <h1>{{ header }}</h1>
-
-    <br />
-    <form action="{{ post_url }}" method="post">
-        {{ form.hidden_tag() }}
-        {{ render_with_label(form.title) }}
-        {{ render_with_label(form.start_time) }}
-        {{ render_with_label(form.end_time) }}
-        {{ render_with_label(form.disabled) }}
-        {{ render_with_label(form.vote_type) }}
-
-        <div id="questions">
-            {% set question_counter = 0 %}
-            {% for question in form.questions %}
-            <div id="questions-{{ question_counter }}">
-                {{ question.hidden_tag() }}
-                <p>Question {{ question_counter + 1 }}:</p>
-                <input type="hidden" id="question-id" value="{{ question.id }}" />
-                {{ render_with_id(question.question) }}
-                {{ render_with_id(question.question_type) }}
-                {{ render_with_id(question.question_type_max) }}
-                <div id="questions-{{ question_counter }}-choices">
-                    <p>Choices (for Question {{ question_counter + 1 }}):</p>
-                    {% set choice_counter = 0 %}
-                    {% for choice in question.choices %}
-                    <div id="questions-{{ question_counter }}-choices-{{ choice_counter }}">
-                        {{ choice.hidden_tag() }}
-                        <div>{{ choice.choice.id }}: {{ choice.choice }}
-                            {% if choice_counter > 0 %}
-                             <- <button class="btn" type="button" onclick="deleteNode(this.parentNode.parentNode)">Remove Choice</button>
-                            {% endif %}
+    <div style="padding-left: 10px;">
+        <div class="page-header"><h1>{{ header }}</h1></div>
+        <form action="{{ post_url }}" method="post">
+            {{ form.hidden_tag() }}
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading"><h3 class="panel-title">Vote Options</h3></div>
+                        <div class="panel-body">
+                            {{ render_with_label(form.title) }}
+                            {{ render_with_label(form.start_time) }}
+                            {{ render_with_label(form.end_time) }}
+                            {{ render_with_label(form.disabled) }}
+                            {{ render_with_label(form.vote_type) }}
                         </div>
-                        {% if choice.choice.errors %}
-                        <div style="color: red;">[Required (even for freetext)]</div>
-                        {% endif %}
                     </div>
-                    {% set choice_counter = choice_counter + 1 %}
-                    {% endfor %}
-
                 </div>
-                <button class="btn" type="button" onclick="newChoice(this)">New Choice</button>
-                {% if question_counter > 0 %}
-                <button class="btn" type="button" onclick="deleteNode(this.parentNode)">Remove Question</button>
-                {% endif %}
             </div>
-            {% set question_counter = question_counter + 1 %}
-            {% endfor %}
-        </div>
-        <p><button class="btn" type="button" onclick="newQuestion()">New Question</button></p>
-        <p>
-            {{ form.submit }}
-            {{ form.delete }}
-        </p>
-    </form>
-    <p><a href="/votes">Go back</a></p>
-    <script src="{{ url_for("static", filename="js/dynamic_creation.js") }}"></script>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div id="questions">
+                        {% set question_counter = 0 %}
+                        {% for question in form.questions %}
+                        <div class="panel panel-primary" id="questions-{{ question_counter }}">
+                            <div class="panel-heading"><h3 class="panel-title">Question {{ question_counter + 1 }}</h3></div>
+                            <div class="panel-body">
+                                {{ question.hidden_tag() }}
+                                <input type="hidden" id="question-id" value="{{ question.id }}" />
+                                {{ render_with_id(question.question) }}
+                                {{ render_with_id(question.question_type) }}
+                                {{ render_with_id(question.question_type_max) }}
+                                <br />
+                                <div class="panel panel-success" id="questions-{{ question_counter }}-choices">
+                                    <div class="panel-heading">Choices (for Question {{ question_counter + 1 }})</div>
+                                    <ul class="list-group">
+                                        {% set choice_counter = 0 %}
+                                        {% for choice in question.choices %}
+                                        <li class="list-group-item" id="questions-{{ question_counter }}-choices-{{ choice_counter }}">
+                                            {{ choice.hidden_tag() }}
+                                            <div>Choice {{ choice_counter + 1 }}: {{ choice.choice }}
+                                                {% if choice_counter > 0 %}
+                                                <span class="glyphicon glyphicon-arrow-left" aria-hidden="true"></span>
+                                                <button class="btn btn-warning" type="button" onclick="deleteNode(this.parentNode.parentNode)">Remove Choice</button>
+                                                {% endif %}
+                                            </div>
+                                            {% if choice.choice.errors %}
+                                            <div style="color: red;">[Required (even for freetext)]</div>
+                                            {% endif %}
+                                        </li>
+                                        {% set choice_counter = choice_counter + 1 %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                <button class="btn btn-default" type="button" onclick="newChoice(this)">New Choice</button>
+                                {% if question_counter > 0 %}
+                                <button class="btn btn-default" type="button" onclick="deleteNode(this.parentNode)">Remove Question</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% set question_counter = question_counter + 1 %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <p>
+                <button class="btn btn-default" type="button" onclick="newQuestion()">New Question</button>
+            </p>
+            <p>
+                {{ form.submit(class="btn btn-default") }}
+                {% if form.delete %}
+                {{ form.delete(class="btn btn-default") }}
+                {% endif %}
+            </p>
+        </form>
+        <p><input type="button" class="btn btn-default" onclick="location.href='/votes';" value="Go Back" /></p>
+        <script src="{{ url_for("static", filename="js/dynamic_creation.js") }}"></script>
+    </div>
 {% endblock %}

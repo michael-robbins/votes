@@ -3,13 +3,17 @@ import datetime
 from wtforms import Field, StringField, HiddenField, SelectField, IntegerField, SubmitField, DateTimeField, FormField,\
     FieldList, BooleanField
 from wtforms.widgets import Input, html_params, HTMLString
-from wtforms.validators import DataRequired, Email
+from wtforms.validators import DataRequired, Email, Regexp
 from wtforms.compat import text_type
 
 from flask_wtf import Form  # This needs to go after the wtforms import (as that imports a 'Form' class itself)
 
 from . import app, db
 from .models import Voter
+
+company_email_validator = Regexp(app.config["VALID_EMAIL_REGEX"],
+                                 message="Invalid email address (Needs to be: {0})".format(
+                                     app.config["VALID_EMAIL_REGEX"].pattern))
 
 
 class SizedListWidget(object):
@@ -124,16 +128,10 @@ class RankedField(Field):
 
 
 class EmailForm(Form):
-    email = StringField("email", validators=[DataRequired(), Email()])
+    email = StringField("email", validators=[DataRequired(), Email(), company_email_validator])
 
     def validate(self, extra_validators=None):
         if not Form.validate(self):
-            return False
-
-        email_regex = app.config["VALID_EMAIL_REGEX"]
-
-        if not email_regex.match(self.email.data):
-            self.email.errors.append("Invalid email address (Needs to be: {0})".format(email_regex.pattern))
             return False
 
         if not Voter.query.filter_by(email=self.email.data).first():
