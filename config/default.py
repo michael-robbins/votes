@@ -24,6 +24,7 @@ class BaseConfig(object):
 
     # The Mail Exchange server and credentials that passcode emails will be sent to
     MX_SERVER = "localhost"
+    MX_PORT = ""
     MX_USER = ""
     MX_PASSWORD = ""
 

@@ -4,13 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <!-- Bring in all the static JS libraries -->
+    <!-- TODO: Make these minified -->
     <script src="{{ url_for("static", filename="js/jquery-2.2.4.js") }}"></script>
     <script src="{{ url_for("static", filename="js/bootstrap.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/snap.svg-0.4.1.js") }}"></script>
+    <script src="{{ url_for("static", filename="js/pizza-chart.js") }}"></script>
 
+    <!-- Allow the tooltips to render correctly -->
     <script>
-        $(function () {$('[data-toggle="tooltip"]').tooltip()});
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
     </script>
 
+    <!-- Bring in the CSS files -->
+    <!-- TODO: Make these minified -->
     <link rel="stylesheet" href="{{ url_for("static", filename="css/bootstrap.css") }}">
     <link rel="stylesheet" href="{{ url_for("static", filename="css/votes.css") }}">
 
@@ -25,15 +34,18 @@
     {% endif %}
 
     {% with messages = get_flashed_messages(with_categories=true) %}
-      <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
-      {% if messages %}
+        <!-- Categories: success (green), info (blue), warning (yellow), danger (red) -->
+        {% if messages %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} alert-dismissible" role="alert">
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <!-- <strong>Title</strong> --> {{ message }}
-          </div>
+            <div class="alert alert-{{ category }} alert-fixed" id="flashed-message" role="alert">{{ message }}</div>
+
+            <script>
+                $("#flashed-message").fadeTo(2000, 500).slideUp(500, function(){
+                    $("#flashed-message").alert('close');
+                });
+            </script>
         {% endfor %}
-      {% endif %}
+        {% endif %}
     {% endwith %}
 
     {% block content %}{% endblock %}

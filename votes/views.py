@@ -15,7 +15,7 @@ from .vote_helper import *
 @app.route("/votes/")
 def index():
     voter_email = session.get("email")
-    voter, message = get_voter(voter_email)
+    voter = get_voter(voter_email)
 
     if not voter:
         flash("You're not logged in mate.", "danger")
@@ -82,6 +82,7 @@ def login():
         # TODO: Hack, remove this later, saves having to log in each time
         if app.config["TESTING"] or email in app.config["ADMIN_EMAILS"]:
             session["email"] = email
+            flash("Successfully logged in as {0}!".format(email), "success")
             return redirect(INDEX_LOGIN)
 
         # Present the form asking for the users passcode
@@ -89,6 +90,7 @@ def login():
 
         if login_form.validate_on_submit():
             session["email"] = email
+            flash("Successfully logged in as {0}!".format(email), "success")
             return redirect(INDEX_LOGIN)
 
         template = "auth.html"
@@ -107,7 +109,7 @@ def login():
 @app.route("/votes/new", methods=["GET", "POST"])
 def vote_new():
     voter_email = session.get("email")
-    voter, message = get_voter(voter_email)
+    voter = get_voter(voter_email)
 
     if not voter:
         flash("You're not logged in mate.", "danger")
@@ -151,6 +153,7 @@ def vote_new():
                 db.session.add(vote_choice)
 
         db.session.commit()
+        flash("Successfully created your Vote!", "success")
         return redirect(INDEX_SUBMITTED)
 
     context = {
@@ -167,21 +170,21 @@ def vote_new():
 @app.route("/votes/<int:vote_id>/edit", methods=["GET", "POST"])
 def vote_edit(vote_id):
     voter_email = session.get("email")
-    voter, message = get_voter(voter_email)
+    voter = get_voter(voter_email)
 
     if not voter:
-        # TODO: Flash 'message'
+        flash("You're not logged in mate.", "danger")
         return redirect(LOGIN_THX)
 
     vote = Vote.query.get(vote_id)
 
     if not vote:
-        # TODO: Flash "Vote doesn't exist"
-        return redirect(INDEX_EXISTENCE)
+        flash("That vote doesn't exist.", "danger")
+        return redirect(INDEX)
 
     if not is_vote_owner(vote, voter):
-        # TODO: Flash "You are not the owner of vote: VOTE_TITLE"
-        return redirect(INDEX_CHEATER)
+        flash("You're not the owner of this vote, so stop trying to hack things.", "danger")
+        return redirect(INDEX)
 
     vote_form = VoteForm()
 
@@ -193,16 +196,19 @@ def vote_edit(vote_id):
 
             if vote:
                 if not is_vote_owner(vote, voter):
-                    return redirect(INDEX_CHEATER)
+                    flash("You're not the owner of this vote, so stop trying to hack things.", "danger")
+                    return redirect(INDEX)
 
                 delete_vote(vote)
 
-                # TODO: Flash 'Vote' deleted
-                return redirect(INDEX_RMRF)
+                flash("Vote has been successfully deleted.", "success")
+                return redirect(INDEX)
             else:
-                return redirect(INDEX_BAD_VOTE_ID)
+                flash("The vote you're trying to delete doesn't exist? Stop hacking things.", "warning")
+                return redirect(INDEX)
         else:
-            return redirect(INDEX_EXISTENCE)
+            flash("You're missing part of the submission form.", "danger")
+            return redirect(INDEX)
 
     if vote_form.validate_on_submit():
         if vote_form.id.data:
@@ -211,7 +217,8 @@ def vote_edit(vote_id):
             if vote:
                 # Double check the user isn't cheating by changing the Vote ID on us in the form's hidden field
                 if not is_vote_owner(vote, voter):
-                    return redirect(INDEX_CHEATER)
+                    flash("You're not the owner of this vote, so stop trying to hack things.", "danger")
+                    return redirect(INDEX)
 
                 # Update all the attributes, if the user changed the Vote ID to something else they own, bad luck!
                 vote.title = vote_form.title.data
@@ -220,9 +227,9 @@ def vote_edit(vote_id):
                 vote.vote_type = vote_form.vote_type.data
                 vote.disabled = vote_form.disabled.data
             else:
-                return redirect(INDEX_BAD_VOTE_ID)
+                flash("You're missing part of the submission form.", "danger")
+                return redirect(INDEX)
         else:
-            # TODO: Figure out why we would allow this logic to occur?
             vote = Vote(
                 title=vote_form.title.data,
                 owner=voter,
@@ -244,14 +251,15 @@ def vote_edit(vote_id):
                 if vote_question:
                     if vote_question.vote != vote:
                         # User's submitting a vote question that doesn't belong to this vote?
-                        # TODO: Flash "User submitted a vote question not belonging to the vote?"
-                        return redirect(INDEX_CHEATER)
+                        flash("You've submitted a question not belonging to this vote?", "warning")
+                        return redirect(INDEX)
 
                     vote_question.question_type = question.question_type.data
                     vote_question.question_type_max = question.question_type_max.data
                     vote_question.question = question.question.data
                 else:
                     # User submitted a question that doesn't exist
+                    flash("One of the questions you submitted doesn't exist?", "warning")
                     return redirect(INDEX_BAD_QUESTION_ID)
             else:
                 vote_question = VoteQuestion(
@@ -273,13 +281,14 @@ def vote_edit(vote_id):
                     if vote_choice:
                         if vote_choice.question != vote_question:
                             # Users submitting a choice to a different question
-                            # TODO: Flash "User submitted for a choice to a different question"
-                            return redirect(INDEX_CHEATER)
+                            flash("You've submitted a choice that belongs to a different question.", "warning")
+                            return redirect(INDEX)
 
                         vote_choice.choice = choice.choice.data
                     else:
                         # User submitted for a choice that doesn't exist?
-                        return redirect(INDEX_BAD_CHOICE_ID)
+                        flash("One of the choices you submitted doesn't exist?", "danger")
+                        return redirect(INDEX)
                 else:
                     vote_choice = VoteChoice(question=vote_question, choice=choice.choice.data)
 
@@ -290,7 +299,8 @@ def vote_edit(vote_id):
             db.session.delete(question)
 
         db.session.commit()
-        return redirect(INDEX_SUBMITTED)
+        flash("Successfully submitted your vote! Thanks for participating!", "success")
+        return redirect(INDEX)
     else:
         # If it's not valid and it hasn't been submitted, then overwrite it with the model requested in the GET
         if not vote_form.is_submitted():
@@ -314,27 +324,28 @@ def vote_edit(vote_id):
 @app.route("/votes/<int:vote_id>/cast", methods=["GET", "POST"])
 def vote_cast_crud(vote_id):
     voter_email = session.get("email")
-    voter, message = get_voter(voter_email)
+    voter = get_voter(voter_email)
 
     # Ensure both the voter and the vote exist, bail if they're missing
     if not voter:
-        # TODO: Flash "You're not logged in"
-        return redirect(LOGIN_THX)
+        flash("You're not logged in mate.", "danger")
+        return redirect(LOGIN)
 
     vote = Vote.query.get(vote_id)
 
     if not vote:
-        # TODO: Flash "Vote doesn't exist"
-        return redirect(INDEX_EXISTENCE)
+        flash("That vote doesn't exist.", "danger")
+        return redirect(INDEX)
 
     if not vote_is_live(vote):
         # They should only have gotten here by messing with the URL!
-        return redirect(INDEX_CHEATER)
+        flash("The vote is now closed, thank you for your participation.", "info")
+        return redirect(INDEX)
 
     # Do not let the user vote again if we're in anonymous mode and they've participated already
     if vote.vote_type == VOTE_ANONYMOUS and user_has_participated(voter, vote):
-        # TODO: Flash "You've already participated in this vote!"
-        return redirect(INDEX_ALREADY_VOTED)
+        flash("Uhh, you've already participated in this vote.", "warning")
+        return redirect(INDEX)
 
     # If the user is here, that means they are in TrackedBallot mode, or have not voted already for this vote
     # Force the resolution of the questions
@@ -349,8 +360,8 @@ def vote_cast_crud(vote_id):
         for question, answer in questions_and_answers_from_form(vote_form):
             delete_actions(voter, question)
 
-        # TODO: Flash 'Vote submission' deleted
-        return redirect(INDEX_RMRF)
+        flash("Your submission has been deleted, please submit a new vote!", "success")
+        return redirect(INDEX)
 
     # The user is attempting to submit their vote, we must deal with it
     if vote_form.validate_on_submit():
@@ -442,7 +453,7 @@ def vote_cast_crud(vote_id):
 
         if error_parsing:
             # We failed to save the form, render the vote and the users choices along with any new errors from above
-            # TODO: Flash "Vote not saved"?
+            flash("Your vote failed to submit for some reason, please review your entry and try again.", "warning")
             delattr(vote_form, "delete")
         else:
             # Record the participation of that voter for that vote
@@ -452,8 +463,8 @@ def vote_cast_crud(vote_id):
             # 'cast' the vote by committing!
             db.session.commit()
 
-            # TODO: Flash "Vote Recorded"
-            return redirect(INDEX_SUBMITTED)
+            flash("Your vote has been recorded, thank you for participating!", "success")
+            return redirect(INDEX)
 
     # The user is attempting to 'view' their ballot, show them their existing vote, or a blank one!
     elif not vote_form.is_submitted():
@@ -510,18 +521,18 @@ def vote_cast_crud(vote_id):
 @app.route("/votes/<int:vote_id>/results")
 def vote_result(vote_id):
     voter_email = session.get("email")
-    voter, message = get_voter(voter_email)
+    voter = get_voter(voter_email)
 
     # Ensure both the voter and the vote exist, bail if they're missing
     if not voter:
-        # TODO: Flash "You're not logged in"
-        return redirect(LOGIN_THX)
+        flash("You're not logged in mate.", "danger")
+        return redirect(LOGIN)
 
     vote = Vote.query.get(vote_id)
 
     if not vote:
-        # TODO: Flash "Vote doesn't exist"
-        return redirect(INDEX_EXISTENCE)
+        flash("That vote doesn't exist.", "danger")
+        return redirect(INDEX)
 
     vote.is_live = vote_is_live(vote)
 
@@ -577,7 +588,8 @@ def vote_result(vote_id):
 
         # Sort the results by highest voted
         if question.question_type != QUESTION_FREETEXT:
-            results[question_key] = OrderedDict(sorted(results[question_key].items(), key=lambda x: x[1].results, reverse=True))
+            results[question_key] = OrderedDict(sorted(results[question_key].items(), key=lambda x: x[1].results,
+                                                       reverse=True))
 
             if vote.is_live:
                 # Used for when a Vote is live, and we want to mask the choice names

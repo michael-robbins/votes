@@ -1,12 +1,13 @@
 import re
 import random
+import smtplib
 import datetime
 
 from . import app, db
 from .models import VoterAction, VoteQuestion, Voter, VoterParticipation
 from .forms import RankedField
 
-from flask import session
+from flask import session, flash
 
 from flask_wtf import Form
 from wtforms.validators import DataRequired
@@ -78,19 +79,17 @@ def get_voter(email):
     """
     Returns the voter for the provided email
     :param email:
-    :return (Voter, message):
+    :return voter:
     """
     if not email:
-        # TODO: Flash "Not logged in"
-        return None, "Not logged in"
+        return None
 
     voter = Voter.query.filter_by(email=email).first()
 
     if not voter:
-        # TODO: Flash "Bad Email"
-        return None, "Bad email"
+        return None
 
-    return voter, "Success"
+    return voter
 
 
 def build_form_for_questions(questions):
@@ -254,7 +253,7 @@ def questions_and_answers_from_form(form, vote=None):
                 question = VoteQuestion.query.get(question_id)
 
             if not question:
-                print("Question ID ({0}) doesnt exist".format(question_id))
+                flash("Question doesn't exist?", "danger")
                 getattr(form, field).errors.append("Question ID doesn't exist?")
                 continue
 
@@ -305,3 +304,21 @@ def send_voter_email(voter):
                                                           company=app.config["COMPANY_NAME"])
 
     # TODO: Import email library and send email
+
+    sender = "voting@hitwise.com"
+    receivers = [voter.email]
+
+    message = """From: Hitwise Votes <{sender}>
+To: {receiver} <{receiver}>
+Subject: {subject}
+
+{body}
+""".format(sender=sender, receiver=receivers[0], subject=email_subject, body=email_body)
+
+    try:
+        pass
+        #connection = smtplib.SMTP(app.config["MX_SERVER"], app.config["MX_PORT"])
+        #connection.sendmail(sender, receivers, message)
+        # Sent!
+    except smtplib.SMTPException:
+        print("Unable to send email!")

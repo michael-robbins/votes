@@ -20,11 +20,12 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <ul class="list-group">
+                    <ul class="list-group" data-pie-id="svg-{{ loop.index0 }}">
                         {% for choice_id in results[question.id] %}
-                        <li class="list-group-item">{{ results[question.id][choice_id].name }}: {{ results[question.id][choice_id].results }}</li>
+                        <li class="list-group-item" data-value="{{ results[question.id][choice_id].results }}">{{ results[question.id][choice_id].name }} ({{ results[question.id][choice_id].results }})</li>
                         {% endfor %}
                     </ul>
+                    <div id="svg-{{ loop.index0 }}"></div>
                     {% endif %}
                 </div>
             </div>
