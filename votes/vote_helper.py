@@ -1,7 +1,8 @@
 import re
 import random
-import smtplib
 import datetime
+
+from smtplib import SMTP, SMTPException
 
 from . import app, db
 from .models import VoterAction, VoteQuestion, Voter, VoterParticipation, VoteChoice
@@ -318,27 +319,23 @@ def send_voter_email(voter):
     """
     update_voter_passcode(voter)
 
-    email_subject = app.config["PASSCODE_EMAIL_SUBJECT"]
+    email_subject = app.config["PASSCODE_EMAIL_SUBJECT"].format(company=app.config["COMPANY_NAME"])
     email_body = app.config["PASSCODE_EMAIL_BODY"].format(email=voter.email, passcode=voter.passcode,
                                                           generated=voter.passcode_generated,
                                                           company=app.config["COMPANY_NAME"])
 
-    # TODO: Import email library and send email
+    sender = app.config["PASSCODE_EMAIL_FROM"]
+    receiver = voter.email
 
-    sender = "voting@hitwise.com"
-    receivers = [voter.email]
-
-    message = """From: Hitwise Votes <{sender}>
-To: {receiver} <{receiver}>
+    message = """From: {company} Votes <{sender}>
+To: {receiver}
 Subject: {subject}
 
 {body}
-""".format(sender=sender, receiver=receivers[0], subject=email_subject, body=email_body)
+""".format(sender=sender, receiver=receiver, subject=email_subject, body=email_body, company=app.config["COMPANY"])
 
     try:
-        pass
-        #connection = smtplib.SMTP(app.config["MX_SERVER"], app.config["MX_PORT"])
-        #connection.sendmail(sender, receivers, message)
-        # Sent!
-    except smtplib.SMTPException:
+        with SMTP(app.config["MX_SERVER"], app.config["MX_PORT"]) as smtp:
+            smtp.sendmail(sender, receiver, message)
+    except SMTPException:
         print("Unable to send email!")

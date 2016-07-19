@@ -78,12 +78,6 @@ def login():
 
         template = "email.html"
     else:
-        # TODO: Hack, remove this later, saves having to log in each time
-        if app.config["TESTING"] or email in app.config["ADMIN_EMAILS"]:
-            session["email"] = email
-            flash("Successfully logged in as {0}!".format(email), "success")
-            return redirect(INDEX_LOGIN)
-
         # Present the form asking for the users passcode
         login_form = AuthForm()
 

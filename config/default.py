@@ -35,15 +35,15 @@ class BaseConfig(object):
     # Passcode settings
     PASSCODE_LENGTH = 8
     PASSCODE_POOL = string.ascii_uppercase + string.digits
-    PASSCODE_EMAIL_SUBJECT = "{0} Votes - Passcode Request".format(COMPANY_NAME)
 
     # Available template variables:
     # email: The users email address
     # passcode: The generated passcode
     # generated: The time the passcode was generated
     # company: The name of the company as set above
-    PASSCODE_EMAIL_BODY = """
-Hi {email},
+    PASSCODE_EMAIL_SUBJECT = "{company} Votes - Passcode Request"
+
+    PASSCODE_EMAIL_BODY = """Hi {email},
 
 Here's your single-use passcode you can use to log into the {company} voting system.
 Passcode: {passcode}
@@ -55,6 +55,8 @@ After this you will need to generate a new one after that (by logging in again).
 Warm Regards,
 {company}
 """
+
+    PASSCODE_EMAIL_FROM = "default@company.com"
 
     # Iterable of email addresses that will be treated like vote owners for vote editing purposes
     ADMIN_EMAILS = list()
