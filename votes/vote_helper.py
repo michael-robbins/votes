@@ -4,7 +4,7 @@ import smtplib
 import datetime
 
 from . import app, db
-from .models import VoterAction, VoteQuestion, Voter, VoterParticipation
+from .models import VoterAction, VoteQuestion, Voter, VoterParticipation, VoteChoice
 from .forms import RankedField
 
 from flask import session, flash
@@ -52,7 +52,7 @@ def vote_is_live(vote):
     return bool(vote.start_time < now < vote.end_time)
 
 
-def user_has_participated(voter, vote):
+def user_has_participated(vote, voter):
     """
     Takes a voter and a vote and returns if they have already participated
     :param voter:
@@ -132,8 +132,6 @@ def build_form_for_questions(questions):
         if not Form.validate(self):
             return False
 
-        print(self.data)
-
         question_field_regex = re.compile("^q_([0-9]+)$")
 
         for form_field in self.data:
@@ -165,9 +163,9 @@ def build_form_for_questions(questions):
                     # There's nothing to check here, it's a text box
                     pass
                 elif question_type == QUESTION_RANKED:
-                    print("Validating QUESTION_RANKED, field length is <= {0}".format(question_type_max))
-                    print(self.data[form_field])
                     ranks_submitted = set()
+
+                    print(self.data[form_field].items())
 
                     for key, value in self.data[form_field].items():
                         if value == "":
@@ -183,6 +181,21 @@ def build_form_for_questions(questions):
                             message = "You've entered too many rankings, the maximum allowed is {0} for this question"
                             getattr(self, form_field).errors.append(message.format(question_type_max))
                             return False
+
+                        choice = VoteChoice.query.get(int(key))
+
+                        if not choice:
+                            message = "You're submitting a ranking to choice that doesn't exist?"
+                            getattr(self, form_field).errors.append(message)
+                            return False
+
+                        if app.config["RANKED_FIELD_RESTRICTIONS"]:
+                            if choice.choice in app.config["RANKED_FIELD_RESTRICTIONS"]:
+                                if session.get("email") in app.config["RANKED_FIELD_RESTRICTIONS"][choice.choice]:
+                                    message = "You're submitting a ranking to a choice you're not allowed to submit " \
+                                              "to ({0})"
+                                    getattr(self, form_field).errors.append(message.format(choice.choice))
+                                    return False
 
                         ranks_submitted.add(value)
 
@@ -200,20 +213,27 @@ def build_form_for_questions(questions):
     return DynamicQuestionForm
 
 
-def delete_actions(voter, question):
+def delete_participation(voter, vote):
     """
-    Takes the vote, voter and question, and deletes all actions taken on that (vote, question) by the user
+    Takes the voter and a vote, and deletes all actions taken on that vote by the voter
     :param voter:
-    :param question:
+    :param vote:
     :return None:
     """
-    actions = VoterAction.query.filter_by(voter=voter, question=question).all()
 
-    if len(actions):
-        for action in actions:
-            db.session.delete(action)
+    questions = VoteQuestion.query.filter_by(vote=vote).all()
 
-        db.session.commit()
+    for question in questions:
+        actions = VoterAction.query.filter_by(voter=voter, question=question).all()
+
+        if len(actions):
+            for action in actions:
+                db.session.delete(action)
+
+    participation = VoterParticipation.query.filter_by(voter=voter, vote=vote).first()
+    db.session.delete(participation)
+
+    db.session.commit()
 
 
 def delete_vote(vote):

@@ -61,3 +61,16 @@ Warm Regards,
 
     # Do we allow non-admin users to create votes
     EVERYONE_CAN_CREATE_VOTES = False
+
+    # Restrict certain email addresses from submitting rankings to certain choices
+    # The idea behind this was to stop 'teams' voting for themselves in a RankedField
+    RANKED_FIELD_RESTRICTIONS = {
+        "Team #1": [
+            "team-1-member-1@company.com",
+            "team-1-member-2@company.com",
+        ],
+        "Team #2": [
+            "team-2-member-1@company.com",
+            "team-2-member-2@company.com"
+        ],
+    }

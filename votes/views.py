@@ -18,7 +18,6 @@ def index():
     voter = get_voter(voter_email)
 
     if not voter:
-        flash("You're not logged in mate.", "danger")
         return redirect(LOGIN)
 
     open_votes = list()
@@ -27,7 +26,7 @@ def index():
 
     now = datetime.datetime.now()
     for vote in Vote.query.all():
-        vote.participated_in = user_has_participated(voter, vote)
+        vote.participated_in = user_has_participated(vote, voter)
 
         template = "{days}d, {hours}h and {minutes}m"
         vote.closes_in = string_format_delta((vote.end_time - now), template)
@@ -343,7 +342,7 @@ def vote_cast_crud(vote_id):
         return redirect(INDEX)
 
     # Do not let the user vote again if we're in anonymous mode and they've participated already
-    if vote.vote_type == VOTE_ANONYMOUS and user_has_participated(voter, vote):
+    if vote.vote_type == VOTE_ANONYMOUS and user_has_participated(vote, voter):
         flash("Uhh, you've already participated in this vote.", "warning")
         return redirect(INDEX)
 
@@ -357,8 +356,7 @@ def vote_cast_crud(vote_id):
 
     # Handle the user attempting to delete their already cast vote
     if vote_form.is_submitted() and vote_form.data.get("delete"):
-        for question, answer in questions_and_answers_from_form(vote_form):
-            delete_actions(voter, question)
+        delete_participation(voter, vote)
 
         flash("Your submission has been deleted, please submit a new vote!", "success")
         return redirect(INDEX)
@@ -457,8 +455,9 @@ def vote_cast_crud(vote_id):
             delattr(vote_form, "delete")
         else:
             # Record the participation of that voter for that vote
-            participation = VoterParticipation(vote, voter)
-            db.session.add(participation)
+            if not user_has_participated(vote, voter):
+                participation = VoterParticipation(vote, voter)
+                db.session.add(participation)
 
             # 'cast' the vote by committing!
             db.session.commit()
