@@ -584,7 +584,7 @@ def vote_result(vote_id):
             elif question.question_type == QUESTION_RANKED:
                 # Each choice gets incremented by the inverse of the rank chosen ((question_type_max + 1) - rank)
                 for choice_id, rank in json.loads(action.choices).items():
-                    if not 1 <= rank <= int(question.question_type_max):
+                    if rank != '' and not 1 <= int(rank) <= int(question.question_type_max):
                         continue
 
                     choice_id = int(choice_id)
