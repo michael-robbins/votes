@@ -234,6 +234,7 @@ def vote_edit(vote_id):
         db.session.add(vote)
 
         existing_questions = {question.id: question for question in VoteQuestion.query.filter_by(vote=vote).all()}
+        is_update = False
 
         for question in vote_form.questions:
             question_id = question.data.get("id")
@@ -242,6 +243,7 @@ def vote_edit(vote_id):
                 vote_question = VoteQuestion.query.get(question_id)
 
                 if vote_question:
+                    is_update = True
                     if vote_question.vote != vote:
                         # User's submitting a vote question that doesn't belong to this vote?
                         flash("You've submitted a question not belonging to this vote?", "warning")
@@ -253,7 +255,7 @@ def vote_edit(vote_id):
                         delete_actions(voter, vote_question)
                         flash("We deleted all user votes for question {0} as you changed it's type.".format(
                             question.question.data
-                        ))
+                        ), "info")
 
                     vote_question.question_type = question.question_type.data
                     vote_question.question_type_max = question.question_type_max.data
@@ -300,7 +302,12 @@ def vote_edit(vote_id):
             db.session.delete(question)
 
         db.session.commit()
-        flash("Successfully submitted your vote! Thanks for participating!", "success")
+
+        if is_update:
+            flash("Successfully updated your vote! Thanks for participating!", "success")
+        else:
+            flash("Successfully submitted your vote! Thanks for participating!", "success")
+
         return redirect(INDEX)
     else:
         # If it's not valid and it hasn't been submitted, then overwrite it with the model requested in the GET
