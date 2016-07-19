@@ -332,7 +332,7 @@ To: {receiver}
 Subject: {subject}
 
 {body}
-""".format(sender=sender, receiver=receiver, subject=email_subject, body=email_body, company=app.config["COMPANY"])
+""".format(sender=sender, receiver=receiver, subject=email_subject, body=email_body, company=app.config["COMPANY_NAME"])
 
     try:
         with SMTP(app.config["MX_SERVER"], app.config["MX_PORT"]) as smtp:
