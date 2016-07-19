@@ -5,7 +5,7 @@ import datetime
 from smtplib import SMTP, SMTPException
 
 from . import app, db
-from .models import VoterAction, VoteQuestion, Voter, VoterParticipation, VoteChoice
+from .models import VoterAction, VoteQuestion, Voter, VoterParticipation, VoteChoice, Vote
 from .forms import RankedField
 
 from flask import session, flash
@@ -212,6 +212,30 @@ def build_form_for_questions(questions):
     setattr(DynamicQuestionForm, "validate", validate)
 
     return DynamicQuestionForm
+
+
+def delete_actions(voter, question):
+    """
+    Takes the voter and a question, and deletes all actions taken on that question by the voter
+    If there are no more actions left for the vote the question is in, we delete the participation as well
+    :param voter:
+    :param question:
+    :return None:
+    """
+
+    for action in VoterAction.query.filter_by(voter=voter, question=question).all():
+        db.session.delete(action)
+
+    vote = Vote.query.get(question.vote_id)
+
+    if vote:
+        left_over_actions = VoterAction.query.filter_by(voter=voter, vote=vote).all()
+
+        if not left_over_actions:
+            participation = VoterParticipation.query.filter_by(voter=voter, vote=vote).first()
+            db.session.delete(participation)
+
+    db.session.commit()
 
 
 def delete_participation(voter, vote):
