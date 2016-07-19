@@ -498,6 +498,7 @@ def vote_cast_crud(vote_id):
             elif question.question_type == QUESTION_RANKED:
                 old_choices = json.loads(previous_action.choices)
                 setattr(question_data, field_name, old_choices)
+                have_data = True
 
         if have_data:
             # User is reviewing their cast vote, change 'Submit' to 'Update' to better reflect the situation
