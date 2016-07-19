@@ -584,12 +584,8 @@ def vote_result(vote_id):
             elif question.question_type == QUESTION_RANKED:
                 # Each choice gets incremented by the inverse of the rank chosen ((question_type_max + 1) - rank)
                 for choice_id, rank in json.loads(action.choices).items():
-                    try:
-                        if rank == '' or not 1 <= int(rank) <= int(question.question_type_max):
-                            flash("There was an error calculating the ranking results!", "danger")
-                            continue
-                    except ValueError:
-                        flash("There was an error calculating the ranking results!", "danger")
+                    if rank == "":
+                        # There are no votes for this choice yet! Just skip calculating with it
                         continue
 
                     choice_id = int(choice_id)
