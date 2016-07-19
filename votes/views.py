@@ -250,7 +250,7 @@ def vote_edit(vote_id):
                     if vote_question.question_type != question.question_type.data:
                         # Delete all the actions for this question on the vote
                         # As we're changing how we interpret the underlying data
-                        delete_actions(voter, question)
+                        delete_actions(voter, vote_question)
                         flash("We deleted all user votes for question {0} as you changed it's type.".format(
                             question.question.data
                         ))
