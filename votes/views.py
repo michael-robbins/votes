@@ -304,9 +304,9 @@ def vote_edit(vote_id):
         db.session.commit()
 
         if is_update:
-            flash("Successfully updated your vote! Thanks for participating!", "success")
+            flash("Successfully updated the vote!", "success")
         else:
-            flash("Successfully submitted your vote! Thanks for participating!", "success")
+            flash("Successfully submitted your vote! Go tell people about it!", "success")
 
         return redirect(INDEX)
     else:
